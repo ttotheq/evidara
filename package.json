@@ -1,0 +1,25 @@
+{
+  "name": "evidara",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Open intelligence, source by source.",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "workers/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "build:packages": "npm run generate -w @evidara/database && npm run build -w @evidara/contracts -w @evidara/ontology -w @evidara/connectors-sdk -w @evidara/reporting -w @evidara/database",
+    "dev": "npm run dev --workspaces --if-present",
+    "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "postinstall": "npm run generate -w @evidara/database",
+    "db:generate": "npm run generate -w @evidara/database",
+    "db:migrate": "npm run migrate:dev -w @evidara/database",
+    "db:studio": "npm run studio -w @evidara/database"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
