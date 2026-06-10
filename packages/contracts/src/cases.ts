@@ -12,6 +12,10 @@ export const createCaseSchema = z.object({
   prohibitedCollection: z.array(z.string().trim().min(1).max(500)).max(50).default([]),
 });
 
+export const createCaseRequestSchema = createCaseSchema.extend({
+  organizationId: z.string().uuid(),
+});
+
 export const caseSchema = createCaseSchema.extend({
   id: z.string().uuid(),
   organizationId: z.string().uuid(),
@@ -22,5 +26,6 @@ export const caseSchema = createCaseSchema.extend({
 });
 
 export type CreateCaseInput = z.infer<typeof createCaseSchema>;
+export type CreateCaseRequest = z.infer<typeof createCaseRequestSchema>;
 export type Case = z.infer<typeof caseSchema>;
 

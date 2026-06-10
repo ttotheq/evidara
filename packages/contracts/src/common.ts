@@ -17,3 +17,13 @@ export const paginationSchema = z.object({
 
 export type HandlingLevel = z.infer<typeof handlingLevelSchema>;
 
+
+export const errorResponseSchema = z.object({
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+    requestId: z.string().optional(),
+  }),
+});
+
+export type ErrorResponse = z.infer<typeof errorResponseSchema>;

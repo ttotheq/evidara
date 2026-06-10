@@ -62,9 +62,11 @@ export async function registerHealthRoutes(app: FastifyInstance) {
     objectStorage.destroy();
   });
 
-  app.get("/health/live", async () => ({ status: "ok" }));
+  app.get("/health/live", { config: { public: true } }, async () => ({
+    status: "ok",
+  }));
 
-  app.get("/health/ready", async (_request, reply) => {
+  app.get("/health/ready", { config: { public: true } }, async (_request, reply) => {
     const [postgres, redisCheck, storage] = await Promise.all([
       runCheck(() => database.$queryRaw`SELECT 1`),
       runCheck(() => redis.ping()),

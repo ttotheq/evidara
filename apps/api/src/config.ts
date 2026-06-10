@@ -32,6 +32,8 @@ const environmentSchema = z.object({
   S3_BUCKET: z.string().min(1),
   S3_ACCESS_KEY: z.string().min(1),
   S3_SECRET_KEY: z.string().min(1),
+  SESSION_SECRET: z.string().min(32),
+  SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(168).default(12),
 });
 
 const parsed = environmentSchema.safeParse(process.env);

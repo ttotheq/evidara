@@ -1,5 +1,14 @@
 import { PrismaClient } from "@prisma/client";
 
+export { Prisma } from "@prisma/client";
+export type {
+  CaseRole,
+  HandlingLevel,
+  OrganizationRole,
+  Session,
+  User,
+} from "@prisma/client";
+
 const globalDatabase = globalThis as unknown as {
   database?: PrismaClient;
 };

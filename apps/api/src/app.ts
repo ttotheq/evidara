@@ -14,8 +14,10 @@ import {
 } from "fastify-type-provider-zod";
 import { createSchema, createYoga } from "graphql-yoga";
 import { config } from "./config.js";
+import { registerAuthRoutes } from "./modules/auth/routes.js";
 import { registerCaseRoutes } from "./modules/cases/routes.js";
 import { registerHealthRoutes } from "./modules/health/routes.js";
+import { authenticationPlugin } from "./plugins/authentication.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -50,6 +52,7 @@ export async function buildApp() {
     },
   });
   await app.register(swaggerUi, { routePrefix: "/docs" });
+  await app.register(authenticationPlugin);
 
   await registerHealthRoutes(app);
 
@@ -82,6 +85,7 @@ export async function buildApp() {
   app.route({
     url: yoga.graphqlEndpoint,
     method: ["GET", "POST", "OPTIONS"],
+    config: { public: true },
     handler: (request, reply) =>
       yoga.handleNodeRequestAndResponse(request, reply, {
         req: request,
@@ -89,6 +93,7 @@ export async function buildApp() {
       }),
   });
 
+  await app.register(registerAuthRoutes, { prefix: "/v1" });
   await app.register(registerCaseRoutes, { prefix: "/v1" });
 
   app.setErrorHandler((error, request, reply) => {
