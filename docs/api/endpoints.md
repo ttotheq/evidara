@@ -1,8 +1,15 @@
 # API Surface
 
 Base path: `/v1`. REST is the command and integration API. GraphQL is a
-read-optimized analyst UI API at `/graphql`. `/openapi.json` is generated from
-the same schemas used for runtime validation.
+read-optimized analyst UI API at `/graphql`. The OpenAPI document is generated
+from the same Zod schemas used for runtime validation and served at
+`/docs/json` (interactive UI at `/docs`).
+
+This document describes the full target surface. The subset implemented by the
+[first usable vertical slice](../plans/first-usable-vertical-slice.md) so far:
+authentication (`/auth/login`, `/auth/logout`, `/auth/csrf`, `/me`) and cases
+(`GET/POST /cases`, `GET/PATCH /cases/:caseId`). Where this document and the
+delivery plan disagree, the delivery plan wins.
 
 ## Identity and organizations
 
@@ -10,6 +17,7 @@ the same schemas used for runtime validation.
 | --- | --- | --- |
 | POST | `/auth/login` | Create a browser session |
 | POST | `/auth/logout` | Revoke the current session |
+| GET | `/auth/csrf` | Rotate and return the session CSRF token |
 | GET | `/me` | Current user and effective memberships |
 | GET | `/organizations/:orgId/members` | List members |
 | POST | `/organizations/:orgId/invitations` | Invite a member |
@@ -20,13 +28,15 @@ the same schemas used for runtime validation.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET/POST | `/cases` | List or create cases |
-| GET/PATCH | `/cases/:caseId` | Read or update case metadata |
+| GET/PATCH | `/cases/:caseId` | Read or update case metadata; archive and reactivate via `status` |
 | POST | `/cases/:caseId/duplicate` | Duplicate case structure, not evidence |
-| POST | `/cases/:caseId/archive` | Archive a case |
 | GET/POST | `/cases/:caseId/members` | List or add collaborators |
 | PATCH/DELETE | `/cases/:caseId/members/:userId` | Update or remove collaborator |
 | GET/POST | `/cases/:caseId/tasks` | List or create tasks |
 | GET | `/cases/:caseId/audit-events` | Paginated append-only audit history |
+
+Unauthorized case reads return `404`, not `403`, so case identifiers cannot be
+enumerated.
 
 ## Collection and evidence
 
@@ -34,13 +44,18 @@ the same schemas used for runtime validation.
 | --- | --- | --- |
 | GET | `/connectors` | Available connectors and safety manifests |
 | POST | `/cases/:caseId/connector-jobs` | Queue an approved collection |
-| GET/POST | `/cases/:caseId/connector-jobs/:jobId` | Inspect or retry a job |
-| POST | `/cases/:caseId/evidence/uploads` | Initiate multipart upload |
-| POST | `/cases/:caseId/evidence/uploads/:uploadId/complete` | Verify and finalize upload |
+| GET | `/cases/:caseId/connector-jobs` | List jobs and their states |
+| GET | `/cases/:caseId/connector-jobs/:jobId` | Inspect a job |
+| POST | `/cases/:caseId/connector-jobs/:jobId/retry` | Retry a retryable failure |
+| POST | `/cases/:caseId/evidence/files` | Streaming multipart upload; SHA-256 computed server-side while streaming |
+| POST | `/cases/:caseId/evidence/manual` | Record manual evidence without a binary object |
 | GET | `/cases/:caseId/evidence` | Filtered evidence register |
 | GET/PATCH | `/cases/:caseId/evidence/:evidenceId` | Read or annotate metadata |
 | POST | `/cases/:caseId/evidence/:evidenceId/verify` | Record review decision |
-| GET | `/cases/:caseId/evidence/:evidenceId/download` | Audited signed download |
+| GET | `/cases/:caseId/evidence/:evidenceId/download` | Audited short-lived signed download |
+
+Uploads stream through the API; presigned direct-to-storage upload is a later
+addition for very large evidence, not the baseline.
 
 ## Ontology and analysis
 

@@ -29,6 +29,25 @@
 - A shared case shell provides navigation, handling-level banner, job activity,
   and permission-aware actions.
 
+### API access and session transport (as implemented)
+
+The browser never calls the API origin directly. Next.js rewrites proxy
+`/v1/*` to the API service (`next.config.ts`), so every API request is
+same-origin from the browser's point of view:
+
+- The session cookie is `HttpOnly` and path-scoped to `/v1`. It is set and
+  sent only on proxied API requests; Next.js page requests never carry it.
+- No CORS surface is exposed for browser traffic, and the API's origin
+  validation sees the web origin on state-changing requests.
+- Because pages cannot read the session cookie, identity and case data load
+  in client components through a shared fetch wrapper (`lib/api.ts`) that
+  injects the CSRF token and recovers once from a rotated token. This is a
+  deliberate deviation from the server-components-first bullet above; revisit
+  it only together with the cookie-path decision.
+- TanStack Query is deferred until an interactive surface needs cache
+  semantics (graph, notebook); the current list/detail pages use the fetch
+  wrapper with explicit loading, error, and empty states.
+
 ## Feature boundaries
 
 ```text
