@@ -16,6 +16,7 @@ import { createSchema, createYoga } from "graphql-yoga";
 import { config } from "./config.js";
 import { registerAuthRoutes } from "./modules/auth/routes.js";
 import { registerCaseRoutes } from "./modules/cases/routes.js";
+import { registerEvidenceRoutes } from "./modules/evidence/routes.js";
 import { registerHealthRoutes } from "./modules/health/routes.js";
 import { authenticationPlugin } from "./plugins/authentication.js";
 
@@ -95,6 +96,7 @@ export async function buildApp() {
 
   await app.register(registerAuthRoutes, { prefix: "/v1" });
   await app.register(registerCaseRoutes, { prefix: "/v1" });
+  await app.register(registerEvidenceRoutes, { prefix: "/v1" });
 
   app.setErrorHandler((error, request, reply) => {
     const normalizedError = error as Error & {

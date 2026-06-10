@@ -53,4 +53,32 @@ export default async function globalSetup() {
     env: { ...process.env, DATABASE_URL: databaseUrl },
     stdio: "inherit",
   });
+
+  await ensureTestBucket();
+}
+
+async function ensureTestBucket() {
+  const bucket = process.env.S3_BUCKET;
+  if (!bucket) {
+    throw new Error("S3_BUCKET is not set after loading .env.test");
+  }
+  const { CreateBucketCommand, HeadBucketCommand, S3Client } = await import(
+    "@aws-sdk/client-s3"
+  );
+  const client = new S3Client({
+    endpoint: process.env.S3_ENDPOINT,
+    region: process.env.S3_REGION,
+    forcePathStyle: true,
+    credentials: {
+      accessKeyId: process.env.S3_ACCESS_KEY ?? "",
+      secretAccessKey: process.env.S3_SECRET_KEY ?? "",
+    },
+  });
+  try {
+    await client.send(new HeadBucketCommand({ Bucket: bucket }));
+  } catch {
+    await client.send(new CreateBucketCommand({ Bucket: bucket }));
+  } finally {
+    client.destroy();
+  }
 }

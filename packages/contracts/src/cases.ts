@@ -10,6 +10,7 @@ export const caseActionSchema = z.enum([
   "case.members.manage",
   "evidence.create",
   "evidence.read",
+  "evidence.update",
   "evidence.download",
   "connector.run",
   "connector.retry",

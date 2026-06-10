@@ -43,6 +43,10 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const method = options.method ?? "GET";
   const isMutation = method !== "GET";
+  // FormData bodies set their own multipart boundary; the browser must
+  // provide the content type.
+  const isFormData =
+    typeof FormData !== "undefined" && options.body instanceof FormData;
 
   const performFetch = () => {
     const token = getCsrfToken();
@@ -50,14 +54,18 @@ export async function apiFetch<T>(
       method,
       credentials: "same-origin",
       headers: {
-        ...(options.body !== undefined
+        ...(options.body !== undefined && !isFormData
           ? { "content-type": "application/json" }
           : {}),
         ...(isMutation && token ? { "x-csrf-token": token } : {}),
         ...options.headers,
       },
       ...(options.body !== undefined
-        ? { body: JSON.stringify(options.body) }
+        ? {
+            body: isFormData
+              ? (options.body as FormData)
+              : JSON.stringify(options.body),
+          }
         : {}),
     });
   };

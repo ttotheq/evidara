@@ -11,6 +11,7 @@ export type CaseAction =
   | "case.members.manage"
   | "evidence.create"
   | "evidence.read"
+  | "evidence.update"
   | "evidence.download"
   | "connector.run"
   | "connector.retry"
@@ -22,6 +23,7 @@ export const ALL_CASE_ACTIONS: readonly CaseAction[] = [
   "case.members.manage",
   "evidence.create",
   "evidence.read",
+  "evidence.update",
   "evidence.download",
   "connector.run",
   "connector.retry",
@@ -52,6 +54,7 @@ const CASE_ROLE_ACTIONS: Record<CaseRole, ReadonlySet<CaseAction>> = {
     "case.members.manage",
     "evidence.create",
     "evidence.read",
+    "evidence.update",
     "evidence.download",
     "connector.run",
     "connector.retry",
@@ -62,6 +65,7 @@ const CASE_ROLE_ACTIONS: Record<CaseRole, ReadonlySet<CaseAction>> = {
     "case.update",
     "evidence.create",
     "evidence.read",
+    "evidence.update",
     "evidence.download",
     "connector.run",
     "connector.retry",

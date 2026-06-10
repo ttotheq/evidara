@@ -34,6 +34,32 @@ const environmentSchema = z.object({
   S3_SECRET_KEY: z.string().min(1),
   SESSION_SECRET: z.string().min(32),
   SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(168).default(12),
+  UPLOAD_MAX_BYTES: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .default(25 * 1024 * 1024),
+  UPLOAD_ALLOWED_MEDIA_TYPES: z
+    .string()
+    .default(
+      [
+        "application/pdf",
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "text/plain",
+        "text/csv",
+        "application/json",
+      ].join(","),
+    )
+    .transform((value) =>
+      value
+        .split(",")
+        .map((entry) => entry.trim().toLowerCase())
+        .filter((entry) => entry.length > 0),
+    ),
+  UPLOAD_TIMEOUT_SECONDS: z.coerce.number().int().min(1).max(3600).default(120),
+  DOWNLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(10).max(600).default(60),
 });
 
 const parsed = environmentSchema.safeParse(process.env);

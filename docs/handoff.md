@@ -2,7 +2,7 @@
 
 Date: 2026-06-10
 Branch: `master` (note: tooling expects `main` as the eventual PR target; not yet reconciled)
-Last commit at handoff: `fc2727e`
+Last commit at handoff: Phase 4 evidence ingestion (see `git log`)
 
 ## What this project is
 
@@ -14,23 +14,23 @@ eight-phase plan covering auth, cases, evidence ingestion, secure web capture,
 audit, tests, and CI. **Where any other document disagrees with that plan, the
 plan wins.**
 
-## Milestone status: 3 of 8 phases complete
+## Milestone status: 4 of 8 phases complete
 
 | Phase | Scope | Status | Commit |
 | --- | --- | --- | --- |
 | 1 | Dev environment, initial migration, seed, readiness checks | Done | `733e64a` |
 | 2 | Sessions, authentication, CSRF, central authorization | Done | `55a8b00` |
 | 3 | Case workspace (case API + first real web UI) | Done | `b5d6b4f` |
-| 4 | Evidence ingestion and source register | **Next** | — |
-| 5 | Secure web-page capture connector | Pending | — |
+| 4 | Evidence ingestion and source register | Done | see `git log` |
+| 5 | Secure web-page capture connector | **Next** | — |
 | 6 | Audit interfaces | Pending | — |
 | 7 | Automated testing and CI | Pending | — |
 | 8 | Documentation and release gate | Pending | — |
 
-Each phase landed as one commit on a building, tested tree. Phase 4 starts at
-plan §7 "Phase 4" with the API contract in §5 and the upload architecture in
-§3 "Evidence upload" (API-streamed multipart, SHA-256 while streaming,
-temporary-then-promoted MinIO keys; presigned upload explicitly deferred).
+Each phase landed as one commit on a building, tested tree. Phase 5 starts at
+plan §7 "Phase 5" with the connector requirements in §3 "Web-page capture"
+(SSRF address classification for IPv4/IPv6, redirect revalidation, streaming
+limits, no page JavaScript) and the job API in §5.
 
 ## Running it
 
@@ -46,7 +46,11 @@ Sign in at `http://localhost:3000/login` with the `SEED_OWNER_EMAIL` /
 `SEED_OWNER_PASSWORD` values from `.env`. API readiness:
 `GET :4000/health/ready` (checks postgres, redis, object storage).
 
-Tests: `npm test -w @evidara/api` — 87 vitest tests (unit + integration).
+Tests: `npm test -w @evidara/api` — 118 vitest tests (unit + integration).
+Integration tests talk to the real test MinIO bucket
+(`evidara-evidence-test`, created automatically by the global setup) and
+`.env.test` pins `UPLOAD_MAX_BYTES=1024` so the size-limit test stays fast —
+keep test upload fixtures under 1 KiB.
 Integration tests auto-create an `evidara_test` database and apply migrations;
 the global setup refuses any database whose name does not end in `_test`.
 A `pretest` hook rebuilds workspace packages first — do not remove it; the API
@@ -88,6 +92,31 @@ not accidentally.
    a dummy-hash verify on unknown emails to equalize login timing; session
    tokens are 256-bit, stored only as SHA-256 digests; IPs stored only as
    HMAC-SHA256 keyed by `SESSION_SECRET`.
+9. **`evidence.update` policy action added** (OWNER and ANALYST only). The
+   plan's representative action list has no update action, but the PATCH
+   evidence endpoint exists in §5 and deny-by-default requires an explicit
+   action. REVIEWER/VIEWER cannot annotate.
+10. **Upload flow ordering:** multipart metadata fields must precede the file
+    part; the API validates metadata (and authorization, and idempotency
+    replay) before accepting any bytes. The web upload dialog appends fields
+    to `FormData` before the file for this reason.
+11. **Blob dedup and promotion.** Bytes stream through SHA-256 to
+    `uploads/tmp/<uploadId>`; after verification the object is server-side
+    copied to an opaque `evidence/<uuid>` key. `EvidenceBlob` is unique on
+    `(sha256, byteSize)` — identical content re-uses the existing blob and the
+    redundant copy is deleted. An `Upload` row tracks every attempt
+    (`PENDING/COMPLETED/FAILED` + `errorCode`) so interrupted transfers leave
+    a cleanup pointer, never evidence rows.
+12. **Content typing:** `file-type` magic-byte detection; text formats (no
+    magic bytes) accept the declared type only from a small text allowlist,
+    else degrade to `text/plain`; undetectable binary becomes
+    `application/octet-stream` (rejected by the default allowlist). Policy is
+    `UPLOAD_MAX_BYTES` / `UPLOAD_ALLOWED_MEDIA_TYPES` /
+    `UPLOAD_TIMEOUT_SECONDS` / `DOWNLOAD_URL_TTL_SECONDS` in config.
+13. **Downloads return JSON `{ url, expiresAt, filename }`** with a 60-second
+    presigned MinIO GET (forced `attachment` disposition), and write an
+    `evidence.downloaded` audit event. Object keys and buckets never appear
+    in any API response.
 
 ## Environment and tooling gotchas
 
@@ -117,24 +146,27 @@ not accidentally.
 ## Local dev database state (cosmetic)
 
 Verification left behind: a case named "My conflicting rename" (id in audit
-history), users `viewer@evidara.local` (password = seed owner's), and two
-"Manual check case" rows. Deleting cases via SQL is blocked by the append-only
+history), users `viewer@evidara.local` (password = seed owner's), two
+"Manual check case" rows, and a "Phase 4 verification case" holding one
+uploaded text file, one manual evidence item, and a FAILED upload row from
+the rejected-type check. Deleting cases via SQL is blocked by the append-only
 `AuditEvent` restrict FK — by design. A consented `npm run db:reset` clears
-everything.
+everything (MinIO objects under `evidence/` survive a database reset; wipe
+the bucket too if you want a truly clean slate).
 
-## Phase 4 pointers (next work)
+## Phase 5 pointers (next work)
 
-Read plan §3 "Evidence upload", §4 (Upload model + EvidenceBlob/EvidenceItem
-amendments), §5 evidence endpoints, §7 Phase 4 deliverables/acceptance. Key
-constraints: stream bytes through SHA-256 to a temporary MinIO key, never
-trust client hash/MIME/filename, promote to an opaque immutable key in the
-same transaction as the database records, short-lived signed downloads that
-create audit events, interrupted uploads leave no durable record. The
-`scripts/create-bucket.mjs` bootstrap and the readiness check's S3 client
-(`apps/api/src/modules/health/routes.ts`) show the existing MinIO wiring
-(`forcePathStyle: true` matters). UI: source register table, upload + manual
-evidence dialogs, provenance drawer — visual language in
-`apps/web/app/styles.css`, permission gating via `useCase().can(...)`.
+Read plan §3 "Web-page capture", §5 connector endpoints, §7 Phase 5
+deliverables/acceptance. The connector worker lives in `workers/connectors`
+(currently fails closed with no adapters registered); the connector SDK
+package is `packages/connectors-sdk`. Plan §4 still lists `ConnectorAttempt`
+and `ConnectorJob` amendments — those were deliberately deferred from the
+Phase 4 migration to keep it scoped; Phase 5 owns them. Captured pages should
+land as evidence through the same blob-promotion path
+(`apps/api/src/modules/evidence/service.ts` — `ingestFileEvidence` shows the
+temp-key/promote/transaction pattern; the worker will need an equivalent that
+runs outside an HTTP request). The storage adapter is
+`apps/api/src/lib/object-storage.ts` (`forcePathStyle: true` matters).
 
 ## Conventions observed so far
 

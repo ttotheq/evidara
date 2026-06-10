@@ -203,7 +203,7 @@ export async function createCase(
   }
 }
 
-async function loadCaseContext(authContext: AuthContext, caseId: string) {
+export async function loadCaseContext(authContext: AuthContext, caseId: string) {
   const found = await database.case.findUnique({
     where: { id: caseId },
     include: {

@@ -47,6 +47,24 @@ enum EvidenceStatus {
   EXCLUDED
 }
 
+enum CollectionCompleteness {
+  COMPLETE
+  TRUNCATED
+  INCOMPLETE
+}
+
+enum BlobRetention {
+  ACTIVE
+  PENDING_DELETION
+  DELETED
+}
+
+enum UploadStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
 enum JobStatus {
   QUEUED
   RUNNING
@@ -119,6 +137,7 @@ model User {
   createdCases    Case[]             @relation("CaseCreator")
   auditEvents     AuditEvent[]        @relation("AuditActor")
   evidence        EvidenceItem[]      @relation("EvidenceCreator")
+  uploads         Upload[]            @relation("UploadActor")
   sessions        Session[]
 }
 
@@ -180,6 +199,7 @@ model Case {
   createdBy             User            @relation("CaseCreator", fields: [createdById], references: [id], onDelete: Restrict)
   members               CaseMember[]
   evidence              EvidenceItem[]
+  uploads               Upload[]
   connectorJobs         ConnectorJob[]
   entities              Entity[]
   relations             EntityRelation[]
@@ -205,14 +225,18 @@ model CaseMember {
 }
 
 model EvidenceBlob {
-  id          String         @id @default(uuid()) @db.Uuid
-  sha256      String
-  byteSize    BigInt
-  mediaType   String
-  objectKey   String         @unique
-  immutable   Boolean        @default(true)
-  createdAt   DateTime       @default(now())
-  evidence    EvidenceItem[]
+  id              String         @id @default(uuid()) @db.Uuid
+  sha256          String
+  byteSize        BigInt
+  mediaType       String
+  objectKey       String         @unique
+  storageProvider String
+  bucket          String
+  etag            String?
+  retention       BlobRetention  @default(ACTIVE)
+  immutable       Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  evidence        EvidenceItem[]
 
   @@unique([sha256, byteSize])
 }
@@ -226,16 +250,21 @@ model EvidenceItem {
   status         EvidenceStatus @default(UNREVIEWED)
   handlingLevel  HandlingLevel
   title          String
+  description    String?
+  originalFilename String?
   sourceUrl      String?
   canonicalUrl   String?
   sourceMethod   String
   publishedAt    DateTime?
   observedAt     DateTime?
   collectedAt    DateTime       @default(now())
+  collectionCompleteness CollectionCompleteness @default(COMPLETE)
   analystNotes   String?
   rawMetadata    Json
+  provenance     Json?
   connectorKey   String?
   connectorVersion String?
+  idempotencyKey String?
   version        Int            @default(1)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
@@ -246,8 +275,32 @@ model EvidenceItem {
   relationSources RelationSource[]
   citations      Citation[]
 
+  @@unique([caseId, idempotencyKey])
   @@index([caseId, status, collectedAt])
+  @@index([caseId, kind, collectedAt])
+  @@index([caseId, collectedAt])
   @@index([caseId, sourceUrl])
+}
+
+// Tracks in-flight streamed uploads so interrupted transfers leave a
+// cleanup record pointing at the temporary object, never evidence rows.
+model Upload {
+  id             String       @id @default(uuid()) @db.Uuid
+  caseId         String       @db.Uuid
+  actorId        String       @db.Uuid
+  status         UploadStatus @default(PENDING)
+  tempObjectKey  String       @unique
+  expectedBytes  BigInt?
+  observedBytes  BigInt?
+  idempotencyKey String?
+  errorCode      String?
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  completedAt    DateTime?
+  case           Case         @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  actor          User         @relation("UploadActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([status, expiresAt])
 }
 
 model ConnectorJob {
