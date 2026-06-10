@@ -32,6 +32,16 @@ plan §7 "Phase 5" with the connector requirements in §3 "Web-page capture"
 (SSRF address classification for IPv4/IPv6, redirect revalidation, streaming
 limits, no page JavaScript) and the job API in §5.
 
+**After Phase 8** (decided 2026-06-10): the next planning artifact is a
+dedicated design milestone — formalize the CSS visual language into a
+documented token/component system and do interaction design for the
+post-slice surfaces (entity graph, timeline, map, notebook) — before any
+further feature code. No formal visual design exists today; the de facto
+design system is `apps/web/app/styles.css` plus the UX rules in
+`docs/architecture/ui-architecture.md`. Do not insert design work into
+phases 5–8; the remaining milestone UI (jobs table, audit timeline)
+composes from the existing visual vocabulary.
+
 ## Running it
 
 ```bash
