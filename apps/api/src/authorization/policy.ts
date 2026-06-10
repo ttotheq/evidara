@@ -16,6 +16,18 @@ export type CaseAction =
   | "connector.retry"
   | "audit.read";
 
+export const ALL_CASE_ACTIONS: readonly CaseAction[] = [
+  "case.read",
+  "case.update",
+  "case.members.manage",
+  "evidence.create",
+  "evidence.read",
+  "evidence.download",
+  "connector.run",
+  "connector.retry",
+  "audit.read",
+];
+
 const ORGANIZATION_ROLE_ACTIONS: Record<
   OrganizationRole,
   ReadonlySet<OrganizationAction>

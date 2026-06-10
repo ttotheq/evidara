@@ -1,55 +1,33 @@
-import { createCaseRequestSchema, paginationSchema } from "@evidara/contracts";
-import { database } from "@evidara/database";
+import {
+  createCaseRequestSchema,
+  listCasesQuerySchema,
+  updateCaseSchema,
+} from "@evidara/contracts";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
+import { requireAuthContext } from "../../plugins/authentication.js";
 import {
-  canInOrganization,
-} from "../../authorization/policy.js";
-import {
-  organizationRoleFor,
-  requireAuthContext,
-} from "../../plugins/authentication.js";
+  createCase,
+  getCase,
+  listCases,
+  updateCase,
+} from "./service.js";
+
+const caseParamsSchema = z.object({ caseId: z.string().uuid() });
 
 export const registerCaseRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(
     "/cases",
-    {
-      schema: {
-        querystring: paginationSchema,
-      },
-    },
-    async (request) => {
+    { schema: { querystring: listCasesQuerySchema } },
+    async (request, reply) => {
       const authContext = requireAuthContext(request);
-      const memberOrganizationIds = authContext.memberships.map(
-        (membership) => membership.organizationId,
-      );
-      const oversightOrganizationIds = authContext.memberships
-        .filter(
-          (membership) =>
-            membership.role === "OWNER" || membership.role === "ADMIN",
-        )
-        .map((membership) => membership.organizationId);
-
-      const cases = await database.case.findMany({
-        where: {
-          organizationId: { in: memberOrganizationIds },
-          OR: [
-            { members: { some: { userId: authContext.user.id } } },
-            {
-              organizationId: { in: oversightOrganizationIds },
-              handlingLevel: { not: "RESTRICTED" },
-            },
-          ],
-        },
-        orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
-        take: request.query.limit,
-      });
-
-      return {
-        data: cases,
-        nextCursor:
-          cases.length === request.query.limit ? cases.at(-1)?.id : undefined,
-      };
+      const result = await listCases(authContext, request.query);
+      if (!result.ok) {
+        return reply.status(400).send({
+          error: { code: "INVALID_CURSOR", message: "The cursor is not valid." },
+        });
+      }
+      return { data: result.data, nextCursor: result.nextCursor };
     },
   );
 
@@ -65,13 +43,14 @@ export const registerCaseRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (request, reply) => {
       const authContext = requireAuthContext(request);
-      const input = request.body;
-
-      const organizationRole = organizationRoleFor(
+      const result = await createCase(
         authContext,
-        input.organizationId,
+        request.body,
+        request.headers["idempotency-key"],
+        request.id,
       );
-      if (!canInOrganization({ organizationRole }, "case.create")) {
+
+      if (result.outcome === "forbidden") {
         return reply.status(403).send({
           error: {
             code: "FORBIDDEN",
@@ -80,46 +59,72 @@ export const registerCaseRoutes: FastifyPluginAsyncZod = async (app) => {
         });
       }
 
-      const created = await database.$transaction(async (tx) => {
-        const newCase = await tx.case.create({
-          data: {
-            organizationId: input.organizationId,
-            createdById: authContext.user.id,
-            name: input.name,
-            objective: input.objective,
-            scope: input.scope,
-            justification: input.justification,
-            prohibitedCollection: input.prohibitedCollection,
-            handlingLevel: input.handlingLevel,
-            members: {
-              create: {
-                userId: authContext.user.id,
-                role: "OWNER",
-              },
-            },
-          },
+      return reply
+        .status(result.outcome === "created" ? 201 : 200)
+        .send({ data: result.case });
+    },
+  );
+
+  app.get(
+    "/cases/:caseId",
+    { schema: { params: caseParamsSchema } },
+    async (request, reply) => {
+      const authContext = requireAuthContext(request);
+      const detail = await getCase(authContext, request.params.caseId);
+      if (!detail) {
+        return reply.status(404).send({
+          error: { code: "NOT_FOUND", message: "Case not found." },
         });
+      }
+      return { data: detail };
+    },
+  );
 
-        await tx.auditEvent.create({
-          data: {
-            organizationId: input.organizationId,
-            caseId: newCase.id,
-            actorId: authContext.user.id,
-            action: "case.created",
-            resourceType: "case",
-            resourceId: newCase.id,
-            outcome: "success",
-            requestId: request.id,
-            metadata: {
-              idempotencyKey: request.headers["idempotency-key"],
+  app.patch(
+    "/cases/:caseId",
+    {
+      schema: {
+        params: caseParamsSchema,
+        headers: z.object({
+          "if-match": z.coerce.number().int().positive(),
+        }),
+        body: updateCaseSchema,
+      },
+    },
+    async (request, reply) => {
+      const authContext = requireAuthContext(request);
+      const result = await updateCase(
+        authContext,
+        request.params.caseId,
+        request.body,
+        request.headers["if-match"],
+        request.id,
+      );
+
+      switch (result.outcome) {
+        case "not_found":
+          return reply.status(404).send({
+            error: { code: "NOT_FOUND", message: "Case not found." },
+          });
+        case "forbidden":
+          return reply.status(403).send({
+            error: {
+              code: "FORBIDDEN",
+              message: "You are not allowed to update this case.",
             },
-          },
-        });
-
-        return newCase;
-      });
-
-      return reply.status(201).send({ data: created });
+          });
+        case "version_conflict":
+          return reply.status(412).send({
+            error: {
+              code: "VERSION_CONFLICT",
+              message:
+                "The case changed since you loaded it. Reload and retry.",
+              currentVersion: result.currentVersion,
+            },
+          });
+        case "updated":
+          return { data: result.case };
+      }
     },
   );
 };

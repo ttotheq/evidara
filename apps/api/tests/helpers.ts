@@ -73,6 +73,14 @@ export async function createCaseFixture(input: {
   });
 }
 
+export async function addCaseMember(
+  caseId: string,
+  userId: string,
+  role: CaseRole,
+) {
+  return database.caseMember.create({ data: { caseId, userId, role } });
+}
+
 export async function login(app: App, email: string, password = TEST_PASSWORD) {
   const response = await app.inject({
     method: "POST",

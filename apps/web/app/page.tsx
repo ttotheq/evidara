@@ -28,7 +28,9 @@ export default function HomePage() {
             workspace.
           </p>
           <div className="actions">
-            <button type="button">Create a case</button>
+            <a className="buttonPrimary" href="/cases">
+              Open the workspace
+            </a>
             <a href="/docs">Read the methodology</a>
           </div>
         </div>

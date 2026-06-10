@@ -171,6 +171,7 @@ model Case {
   prohibitedCollection String[]        @default([])
   handlingLevel         HandlingLevel   @default(INTERNAL)
   status                CaseStatus      @default(ACTIVE)
+  idempotencyKey        String?
   version               Int             @default(1)
   archivedAt            DateTime?
   createdAt             DateTime        @default(now())
@@ -188,6 +189,7 @@ model Case {
   reports               Report[]
   auditEvents           AuditEvent[]
 
+  @@unique([organizationId, idempotencyKey])
   @@index([organizationId, status, updatedAt])
 }
 
