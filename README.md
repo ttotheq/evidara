@@ -21,6 +21,13 @@ workers:
 See [System Architecture](docs/architecture/system-architecture.md) for the
 complete design.
 
+## Delivery plan
+
+The next milestone is specified in
+[First Usable Vertical Slice](docs/plans/first-usable-vertical-slice.md). It
+covers authentication, organizations, cases, evidence ingestion, secure web
+capture, auditability, automated tests, and CI.
+
 ## Local setup
 
 1. Copy `.env.example` to `.env`.
@@ -40,4 +47,3 @@ The web app runs at `http://localhost:3000` and the API at
 - Claims and relations require evidence citations or an explicit inference
   label.
 - Audit records are append-only.
-
