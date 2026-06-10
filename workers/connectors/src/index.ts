@@ -1,19 +1,13 @@
 import { database } from "@evidara/database";
 import { Worker } from "bullmq";
 import { z } from "zod";
+import { config, redisConnectionFromUrl } from "./config.js";
 
 const jobSchema = z.object({
   connectorJobId: z.string().uuid(),
 });
 
-const redisUrl = new URL(process.env.REDIS_URL ?? "redis://localhost:6379");
-const connection = {
-  host: redisUrl.hostname,
-  port: Number(redisUrl.port || 6379),
-  ...(redisUrl.username ? { username: redisUrl.username } : {}),
-  ...(redisUrl.password ? { password: redisUrl.password } : {}),
-  maxRetriesPerRequest: null,
-};
+const connection = redisConnectionFromUrl(config.REDIS_URL);
 
 const worker = new Worker(
   "connector-jobs",
@@ -37,7 +31,7 @@ const worker = new Worker(
   },
   {
     connection,
-    concurrency: Number(process.env.CONNECTOR_CONCURRENCY ?? 4),
+    concurrency: config.CONNECTOR_CONCURRENCY,
   },
 );
 

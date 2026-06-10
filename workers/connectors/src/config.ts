@@ -22,16 +22,9 @@ loadEnvironmentFile();
 
 const environmentSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  HOST: z.string().default("0.0.0.0"),
-  PORT: z.coerce.number().int().min(1).max(65535).default(4000),
-  WEB_URL: z.string().url().default("http://localhost:3000"),
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().url(),
-  S3_ENDPOINT: z.string().url(),
-  S3_REGION: z.string().min(1).default("us-east-1"),
-  S3_BUCKET: z.string().min(1),
-  S3_ACCESS_KEY: z.string().min(1),
-  S3_SECRET_KEY: z.string().min(1),
+  CONNECTOR_CONCURRENCY: z.coerce.number().int().min(1).max(32).default(4),
 });
 
 const parsed = environmentSchema.safeParse(process.env);
@@ -48,3 +41,14 @@ if (!parsed.success) {
 }
 
 export const config = parsed.data;
+
+export function redisConnectionFromUrl(rawUrl: string) {
+  const redisUrl = new URL(rawUrl);
+  return {
+    host: redisUrl.hostname,
+    port: Number(redisUrl.port || 6379),
+    ...(redisUrl.username ? { username: redisUrl.username } : {}),
+    ...(redisUrl.password ? { password: redisUrl.password } : {}),
+    maxRetriesPerRequest: null,
+  };
+}

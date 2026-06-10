@@ -11,15 +11,25 @@
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "build:packages": "npm run generate -w @evidara/database && npm run build -w @evidara/contracts -w @evidara/ontology -w @evidara/connectors-sdk -w @evidara/reporting -w @evidara/database",
-    "dev": "npm run dev --workspaces --if-present",
+    "dev": "npm run dev -w @evidara/api & npm run dev -w @evidara/web & npm run dev -w @evidara/connector-worker & npm run dev -w @evidara/ai-worker & wait",
     "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "postinstall": "npm run generate -w @evidara/database",
     "db:generate": "npm run generate -w @evidara/database",
     "db:migrate": "npm run migrate:dev -w @evidara/database",
-    "db:studio": "npm run studio -w @evidara/database"
+    "db:studio": "npm run studio -w @evidara/database",
+    "dev:infra": "docker compose up -d --wait",
+    "dev:bootstrap": "npm run migrate:deploy -w @evidara/database && node scripts/create-bucket.mjs && npm run seed -w @evidara/database",
+    "dev:api": "npm run dev -w @evidara/api",
+    "dev:web": "npm run dev -w @evidara/web",
+    "dev:workers": "npm run dev -w @evidara/connector-worker & npm run dev -w @evidara/ai-worker & wait",
+    "db:reset": "npm run migrate:reset -w @evidara/database",
+    "db:seed": "npm run seed -w @evidara/database"
   },
   "engines": {
     "node": ">=22"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-s3": "^3.1065.0"
   }
 }

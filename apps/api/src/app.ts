@@ -15,6 +15,7 @@ import {
 import { createSchema, createYoga } from "graphql-yoga";
 import { config } from "./config.js";
 import { registerCaseRoutes } from "./modules/cases/routes.js";
+import { registerHealthRoutes } from "./modules/health/routes.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -50,8 +51,7 @@ export async function buildApp() {
   });
   await app.register(swaggerUi, { routePrefix: "/docs" });
 
-  app.get("/health/live", async () => ({ status: "ok" }));
-  app.get("/health/ready", async () => ({ status: "ok" }));
+  await registerHealthRoutes(app);
 
   const yoga = createYoga<{
     req: FastifyRequest;

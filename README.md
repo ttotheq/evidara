@@ -30,15 +30,34 @@ capture, auditability, automated tests, and CI.
 
 ## Local setup
 
-1. Copy `.env.example` to `.env`.
-2. Run `docker compose up -d`.
-3. Run `npm install`.
-4. Run `npm run db:generate`.
-5. Run `npm run db:migrate`.
-6. Run `npm run dev`.
+1. Copy `.env.example` to `.env` and replace the placeholder session secret
+   and seed owner password with local-only values.
+2. Run `npm install`.
+3. Run `npm run dev:infra` to start PostgreSQL, Redis, and MinIO and wait for
+   their health checks.
+4. Run `npm run dev:bootstrap` to apply database migrations, create the
+   evidence bucket, and seed the local organization and owner account.
+5. Run `npm run dev` to start the web app, API, and workers.
 
 The web app runs at `http://localhost:3000` and the API at
-`http://localhost:4000`.
+`http://localhost:4000`. `GET /health/ready` on the API reports the status of
+PostgreSQL, Redis, and object storage.
+
+Useful commands:
+
+- `npm run dev:workers` starts only the connector and AI workers.
+- `npm run db:migrate` creates and applies a new migration in development.
+- `npm run db:reset` drops the database, reapplies all migrations, and reseeds.
+- `npm run db:seed` reapplies the development seed (safe to repeat).
+
+## Environment files
+
+- `.env` holds local development values and is not committed.
+- `.env.test` holds test-only values and is committed; it must never contain
+  real secrets.
+- Variables already set in the process environment take precedence over both
+  files. Processes validate their configuration at startup and exit with a
+  readable error when required values are missing.
 
 ## Product guardrails
 
