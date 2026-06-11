@@ -50,6 +50,23 @@ Useful commands:
 - `npm run db:reset` drops the database, reapplies all migrations, and reseeds.
 - `npm run db:seed` reapplies the development seed (safe to repeat).
 
+## Tests and quality checks
+
+- `npm test` runs every vitest suite. Unit tests are self-contained; the API
+  and worker integration suites need the local infrastructure from
+  `npm run dev:infra` and create their own `evidara_test` database and
+  `evidara-evidence-test` bucket.
+- `npm run test:e2e` builds production bundles, then drives a browser through
+  sign-in, case creation, evidence upload, web capture, download, and the
+  audit timeline against a local fixture web server (first run:
+  `npx playwright install chromium`). It starts its own API on port 4000 and
+  web server on port 3010, so stop a running dev API first.
+- `npm run lint` and `npm run format` run Biome checks and formatting.
+- `npm run typecheck` type-checks every workspace.
+- GitHub Actions (`.github/workflows/ci.yml`) runs quality, unit,
+  integration, end-to-end, and build/dependency-audit jobs on every push and
+  pull request. No test depends on the public internet.
+
 ## Environment files
 
 - `.env` holds local development values and is not committed.

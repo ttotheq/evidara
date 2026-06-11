@@ -3,10 +3,7 @@ import helmet from "@fastify/helmet";
 import sensible from "@fastify/sensible";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
-import Fastify, {
-  type FastifyReply,
-  type FastifyRequest,
-} from "fastify";
+import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import {
   serializerCompiler,
   validatorCompiler,
@@ -79,10 +76,18 @@ export async function buildApp() {
       },
     }),
     logging: {
-      debug: (...args) => args.forEach((argument) => app.log.debug(argument)),
-      info: (...args) => args.forEach((argument) => app.log.info(argument)),
-      warn: (...args) => args.forEach((argument) => app.log.warn(argument)),
-      error: (...args) => args.forEach((argument) => app.log.error(argument)),
+      debug: (...args) => {
+        for (const argument of args) app.log.debug(argument);
+      },
+      info: (...args) => {
+        for (const argument of args) app.log.info(argument);
+      },
+      warn: (...args) => {
+        for (const argument of args) app.log.warn(argument);
+      },
+      error: (...args) => {
+        for (const argument of args) app.log.error(argument);
+      },
     },
   });
 

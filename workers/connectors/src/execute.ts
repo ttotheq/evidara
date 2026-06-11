@@ -3,18 +3,18 @@ import {
   CaptureError,
   captureWebPage,
   WEB_PAGE_CAPTURE_KEY,
-  webPageCaptureInputSchema,
   type WebPageCapture,
+  webPageCaptureInputSchema,
 } from "@evidara/connectors-sdk";
 import type { AuditAction } from "@evidara/contracts";
-import { database, Prisma } from "@evidara/database";
+import { database, type Prisma } from "@evidara/database";
 import { config } from "./config.js";
 import {
   copyObject,
   deleteObjectQuietly,
   putObject,
-  storageBucket,
   STORAGE_PROVIDER,
+  storageBucket,
 } from "./object-storage.js";
 
 const TEMP_KEY_PREFIX = "uploads/tmp/";
@@ -332,7 +332,9 @@ async function failJob(
 
 // Executes one queued connector job end to end. Safe against stale queue
 // entries: jobs already terminal or currently running are skipped.
-export async function executeConnectorJob(connectorJobId: string): Promise<void> {
+export async function executeConnectorJob(
+  connectorJobId: string,
+): Promise<void> {
   const claimed = await database.connectorJob.updateMany({
     where: { id: connectorJobId, status: "QUEUED" },
     data: {

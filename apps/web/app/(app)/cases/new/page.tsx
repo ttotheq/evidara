@@ -2,7 +2,7 @@
 
 import type { Case } from "@evidara/contracts";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type FormEvent } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 import { ApiError, apiFetch } from "../../../../lib/api";
 import { useAuth } from "../../../../lib/auth";
 
@@ -85,7 +85,11 @@ export default function NewCasePage() {
         evaluated against this scope.
       </p>
 
-      <form className="stackedForm" onSubmit={handleSubmit} aria-busy={submitting}>
+      <form
+        className="stackedForm"
+        onSubmit={handleSubmit}
+        aria-busy={submitting}
+      >
         <label htmlFor="case-name">Case name</label>
         <input
           id="case-name"
@@ -150,9 +154,13 @@ export default function NewCasePage() {
         <textarea
           id="case-prohibited"
           rows={3}
-          placeholder={"No contact with subjects\nNo authenticated-area collection"}
+          placeholder={
+            "No contact with subjects\nNo authenticated-area collection"
+          }
           value={form.prohibitedCollection}
-          onChange={(event) => update("prohibitedCollection", event.target.value)}
+          onChange={(event) =>
+            update("prohibitedCollection", event.target.value)
+          }
         />
         <p className="fieldHint">
           Hard boundaries connectors and analysts must not cross.

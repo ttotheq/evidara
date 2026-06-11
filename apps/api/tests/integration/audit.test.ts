@@ -31,8 +31,12 @@ type Session = { cookie: Record<string, string>; csrfToken: string };
 
 // Creates the case through the API so its case.created audit event exists.
 async function fixture() {
-  const owner = await createUser(`owner-${randomUUID().slice(0, 8)}@example.test`);
-  const organization = await createOrganization(`org-${randomUUID().slice(0, 8)}`);
+  const owner = await createUser(
+    `owner-${randomUUID().slice(0, 8)}@example.test`,
+  );
+  const organization = await createOrganization(
+    `org-${randomUUID().slice(0, 8)}`,
+  );
   await addMember(organization.id, owner.id, "MEMBER");
   const session = await login(app, owner.email);
   const created = await app.inject({
@@ -154,9 +158,9 @@ describe("GET /v1/cases/:caseId/audit-events authorization", () => {
   it("hides cases from outsiders as 404", async () => {
     const { caseRecord } = await fixture();
     const outsider = await fixture();
-    expect(
-      (await getAudit(outsider.session, caseRecord.id)).statusCode,
-    ).toBe(404);
+    expect((await getAudit(outsider.session, caseRecord.id)).statusCode).toBe(
+      404,
+    );
   });
 });
 
@@ -248,7 +252,9 @@ describe("denial and authentication audit coverage", () => {
         metadata: Record<string, unknown>;
       }[];
     };
-    const denial = data.find((event) => event.action === "authorization.denied");
+    const denial = data.find(
+      (event) => event.action === "authorization.denied",
+    );
     expect(denial).toBeDefined();
     expect(denial?.outcome).toBe("denied");
     expect(denial?.actor?.id).toBe(viewer.user.id);
@@ -331,11 +337,26 @@ describe("audit events are append-only through the API", () => {
     expect(eventId).toBeDefined();
 
     const attempts = [
-      { method: "POST" as const, url: `/v1/cases/${caseRecord.id}/audit-events` },
-      { method: "PATCH" as const, url: `/v1/cases/${caseRecord.id}/audit-events/${eventId}` },
-      { method: "PUT" as const, url: `/v1/cases/${caseRecord.id}/audit-events/${eventId}` },
-      { method: "DELETE" as const, url: `/v1/cases/${caseRecord.id}/audit-events/${eventId}` },
-      { method: "DELETE" as const, url: `/v1/cases/${caseRecord.id}/audit-events` },
+      {
+        method: "POST" as const,
+        url: `/v1/cases/${caseRecord.id}/audit-events`,
+      },
+      {
+        method: "PATCH" as const,
+        url: `/v1/cases/${caseRecord.id}/audit-events/${eventId}`,
+      },
+      {
+        method: "PUT" as const,
+        url: `/v1/cases/${caseRecord.id}/audit-events/${eventId}`,
+      },
+      {
+        method: "DELETE" as const,
+        url: `/v1/cases/${caseRecord.id}/audit-events/${eventId}`,
+      },
+      {
+        method: "DELETE" as const,
+        url: `/v1/cases/${caseRecord.id}/audit-events`,
+      },
     ];
     for (const attempt of attempts) {
       const response = await app.inject({

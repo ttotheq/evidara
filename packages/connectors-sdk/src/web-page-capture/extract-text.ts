@@ -24,11 +24,15 @@ export function decodeEntities(text: string): string {
     (match, entity: string) => {
       if (entity.startsWith("#x") || entity.startsWith("#X")) {
         const codePoint = Number.parseInt(entity.slice(2), 16);
-        return Number.isNaN(codePoint) ? match : String.fromCodePoint(codePoint);
+        return Number.isNaN(codePoint)
+          ? match
+          : String.fromCodePoint(codePoint);
       }
       if (entity.startsWith("#")) {
         const codePoint = Number.parseInt(entity.slice(1), 10);
-        return Number.isNaN(codePoint) ? match : String.fromCodePoint(codePoint);
+        return Number.isNaN(codePoint)
+          ? match
+          : String.fromCodePoint(codePoint);
       }
       return NAMED_ENTITIES[entity.toLowerCase()] ?? match;
     },
@@ -49,7 +53,10 @@ export function extractTitle(html: string): string | null {
   return title.length > 0 ? title : null;
 }
 
-export function extractCanonicalUrl(html: string, baseUrl: string): string | null {
+export function extractCanonicalUrl(
+  html: string,
+  baseUrl: string,
+): string | null {
   const linkTags = html.match(/<link\b[^>]*>/gi) ?? [];
   for (const tag of linkTags) {
     if (!/rel\s*=\s*["']?canonical["']?/i.test(tag)) continue;
@@ -70,7 +77,10 @@ export function extractCanonicalUrl(html: string, baseUrl: string): string | nul
 export function extractReadableText(html: string): string {
   const withoutBlocks = stripBlocks(html)
     .replaceAll(/<!--[\s\S]*?-->/g, " ")
-    .replaceAll(/<(br|\/p|\/div|\/li|\/h[1-6]|\/tr|\/section|\/article)\b[^>]*>/gi, "\n")
+    .replaceAll(
+      /<(br|\/p|\/div|\/li|\/h[1-6]|\/tr|\/section|\/article)\b[^>]*>/gi,
+      "\n",
+    )
     .replaceAll(/<[^>]+>/g, " ");
   return decodeEntities(withoutBlocks)
     .split("\n")

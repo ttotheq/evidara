@@ -61,4 +61,3 @@ export const ontologyRules: readonly OntologyRule[] = [
     to: ["CLAIM"],
   },
 ];
-

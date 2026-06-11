@@ -4,8 +4,8 @@ import { gzipSync } from "node:zlib";
 import { afterAll, describe, expect, it } from "vitest";
 import {
   CaptureError,
-  captureWebPage,
   type CaptureOptions,
+  captureWebPage,
 } from "../src/web-page-capture/capture.js";
 
 type Handler = Parameters<typeof createServer>[1];
@@ -90,9 +90,11 @@ describe("captureWebPage target blocking", () => {
 
   it("rejects unsupported schemes and invalid URLs", async () => {
     expect(
-      (await expectCaptureError(
-        captureWebPage("ftp://example.com/", optionsFor([])),
-      )).code,
+      (
+        await expectCaptureError(
+          captureWebPage("ftp://example.com/", optionsFor([])),
+        )
+      ).code,
     ).toBe("UNSUPPORTED_SCHEME");
     expect(
       (await expectCaptureError(captureWebPage("%%%", optionsFor([])))).code,

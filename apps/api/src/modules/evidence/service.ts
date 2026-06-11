@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { Transform, type Readable } from "node:stream";
+import { type Readable, Transform } from "node:stream";
 import type {
   CreateManualEvidenceInput,
   EvidenceDownload,
@@ -12,9 +12,9 @@ import { database, Prisma } from "@evidara/database";
 import { canInCase } from "../../authorization/policy.js";
 import { config } from "../../config.js";
 import {
+  type AuditContext,
   recordAuditEvent,
   recordAuthorizationDenied,
-  type AuditContext,
 } from "../../lib/audit.js";
 import {
   copyObject,
@@ -115,7 +115,11 @@ type AccessDenied = { outcome: "not_found" } | { outcome: "forbidden" };
 async function authorizeCaseAction(
   authContext: AuthContext,
   caseId: string,
-  action: "evidence.read" | "evidence.create" | "evidence.update" | "evidence.download",
+  action:
+    | "evidence.read"
+    | "evidence.create"
+    | "evidence.update"
+    | "evidence.download",
   auditContext: AuditContext,
 ): Promise<{ outcome: "ok"; context: CaseContext } | AccessDenied> {
   const context = await loadCaseContext(authContext, caseId);
@@ -239,8 +243,7 @@ export async function createManualEvidence(
   idempotencyKey: string,
   auditContext: AuditContext,
 ): Promise<
-  | { outcome: "created" | "exists"; evidence: EvidenceItemView }
-  | AccessDenied
+  { outcome: "created" | "exists"; evidence: EvidenceItemView } | AccessDenied
 > {
   const access = await authorizeCaseAction(
     authContext,
@@ -251,7 +254,8 @@ export async function createManualEvidence(
   if (access.outcome !== "ok") return access;
 
   const existing = await findByIdempotencyKey(caseId, idempotencyKey);
-  if (existing) return { outcome: "exists", evidence: toEvidenceView(existing) };
+  if (existing)
+    return { outcome: "exists", evidence: toEvidenceView(existing) };
 
   const now = new Date();
   try {
@@ -301,7 +305,8 @@ export async function createManualEvidence(
       error.code === "P2002"
     ) {
       const winner = await findByIdempotencyKey(caseId, idempotencyKey);
-      if (winner) return { outcome: "exists", evidence: toEvidenceView(winner) };
+      if (winner)
+        return { outcome: "exists", evidence: toEvidenceView(winner) };
     }
     throw error;
   }
@@ -553,7 +558,8 @@ export async function ingestFileEvidence(
     ) {
       await failUpload("IDEMPOTENT_REPLAY");
       const winner = await findByIdempotencyKey(caseId, idempotencyKey);
-      if (winner) return { outcome: "exists", evidence: toEvidenceView(winner) };
+      if (winner)
+        return { outcome: "exists", evidence: toEvidenceView(winner) };
     }
     await failUpload("STORAGE_ERROR");
     throw error;

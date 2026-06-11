@@ -23,7 +23,10 @@ export const createCaseSchema = z.object({
   scope: z.string().trim().min(10).max(8000),
   justification: z.string().trim().min(10).max(4000),
   handlingLevel: handlingLevelSchema.default("INTERNAL"),
-  prohibitedCollection: z.array(z.string().trim().min(1).max(500)).max(50).default([]),
+  prohibitedCollection: z
+    .array(z.string().trim().min(1).max(500))
+    .max(50)
+    .default([]),
 });
 
 export const createCaseRequestSchema = createCaseSchema.extend({
@@ -37,9 +40,7 @@ export const updateCaseSchema = z
     scope: z.string().trim().min(10).max(8000),
     justification: z.string().trim().min(10).max(4000),
     handlingLevel: handlingLevelSchema,
-    prohibitedCollection: z
-      .array(z.string().trim().min(1).max(500))
-      .max(50),
+    prohibitedCollection: z.array(z.string().trim().min(1).max(500)).max(50),
     status: caseStatusSchema,
   })
   .partial()

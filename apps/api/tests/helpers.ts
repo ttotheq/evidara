@@ -1,6 +1,10 @@
-import { buildApp } from "../src/app.js";
-import type { CaseRole, HandlingLevel, OrganizationRole } from "@evidara/database";
+import type {
+  CaseRole,
+  HandlingLevel,
+  OrganizationRole,
+} from "@evidara/database";
 import { database } from "@evidara/database";
+import type { buildApp } from "../src/app.js";
 import { hashPassword } from "../src/lib/passwords.js";
 
 type App = Awaited<ReturnType<typeof buildApp>>;

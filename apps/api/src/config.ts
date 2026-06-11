@@ -21,7 +21,9 @@ function loadEnvironmentFile() {
 loadEnvironmentFile();
 
 const environmentSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  NODE_ENV: z
+    .enum(["development", "test", "production"])
+    .default("development"),
   HOST: z.string().default("0.0.0.0"),
   PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   WEB_URL: z.string().url().default("http://localhost:3000"),
@@ -59,7 +61,12 @@ const environmentSchema = z.object({
         .filter((entry) => entry.length > 0),
     ),
   UPLOAD_TIMEOUT_SECONDS: z.coerce.number().int().min(1).max(3600).default(120),
-  DOWNLOAD_URL_TTL_SECONDS: z.coerce.number().int().min(10).max(600).default(60),
+  DOWNLOAD_URL_TTL_SECONDS: z.coerce
+    .number()
+    .int()
+    .min(10)
+    .max(600)
+    .default(60),
 });
 
 const parsed = environmentSchema.safeParse(process.env);

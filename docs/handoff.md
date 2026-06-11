@@ -2,7 +2,7 @@
 
 Date: 2026-06-10
 Branch: `master` (note: tooling expects `main` as the eventual PR target; not yet reconciled)
-Last commit at handoff: Phase 6 audit interfaces (see `git log`)
+Last commit at handoff: Phase 7 automated testing and CI (see `git log`)
 
 ## What this project is
 
@@ -14,7 +14,7 @@ eight-phase plan covering auth, cases, evidence ingestion, secure web capture,
 audit, tests, and CI. **Where any other document disagrees with that plan, the
 plan wins.**
 
-## Milestone status: 6 of 8 phases complete
+## Milestone status: 7 of 8 phases complete
 
 | Phase | Scope | Status | Commit |
 | --- | --- | --- | --- |
@@ -23,13 +23,12 @@ plan wins.**
 | 3 | Case workspace (case API + first real web UI) | Done | `b5d6b4f` |
 | 4 | Evidence ingestion and source register | Done | `e87e1d6` |
 | 5 | Secure web-page capture connector | Done | `f66f8e8` |
-| 6 | Audit interfaces | Done | see `git log` |
-| 7 | Automated testing and CI | **Next** | — |
-| 8 | Documentation and release gate | Pending | — |
+| 6 | Audit interfaces | Done | `b5e93a6` |
+| 7 | Automated testing and CI | Done | see `git log` |
+| 8 | Documentation and release gate | **Next** | — |
 
-Each phase landed as one commit on a building, tested tree. Phase 7 starts at
-plan §7 "Phase 7" (automated testing and CI) with the test strategy in §8 and
-the pipeline shape in §9.
+Each phase landed as one commit on a building, tested tree. Phase 8 starts at
+plan §7 "Phase 8" (documentation and release gate).
 
 **After Phase 8** (decided 2026-06-10): the next planning artifact is a
 dedicated design milestone — formalize the CSS visual language into a
@@ -55,20 +54,45 @@ Sign in at `http://localhost:3000/login` with the `SEED_OWNER_EMAIL` /
 `SEED_OWNER_PASSWORD` values from `.env`. API readiness:
 `GET :4000/health/ready` (checks postgres, redis, object storage).
 
-Tests: `npm test` — 215 vitest tests total: 142 in `@evidara/api`
-(unit + integration) and 73 in `@evidara/connectors-sdk` (SSRF address
+Tests: `npm test` — 225 vitest tests total: 142 in `@evidara/api`
+(unit + integration), 73 in `@evidara/connectors-sdk` (SSRF address
 classification, capture behavior against local fixture HTTP servers, text
-extraction). API integration tests talk to the real test MinIO bucket
-(`evidara-evidence-test`, created automatically by the global setup) and
-`.env.test` pins `UPLOAD_MAX_BYTES=1024` so the size-limit test stays fast —
-keep test upload fixtures under 1 KiB. The global setup also obliterates the
-test Redis queue (`connector-jobs`, db 1) because API tests enqueue real
-entries that no worker drains.
+extraction), and 10 in `@evidara/connector-worker` (executing real
+`web-page-capture` jobs end to end against a local fixture server, including
+evidence/blob/audit writes to the test database and MinIO bucket, failure
+classification, blob dedup, and a BullMQ queue round-trip). API integration
+tests talk to the real test MinIO bucket (`evidara-evidence-test`, created
+automatically by the global setup) and `.env.test` pins
+`UPLOAD_MAX_BYTES=1024` so the size-limit test stays fast — keep test upload
+fixtures under 1 KiB. The global setups also obliterate the test Redis queue
+(`connector-jobs`, db 1) because API tests enqueue real entries that no
+worker drains.
 Integration tests auto-create an `evidara_test` database and apply migrations;
-the global setup refuses any database whose name does not end in `_test`.
-A `pretest` hook rebuilds workspace packages first — do not remove it; the API
-resolves `@evidara/contracts` and `@evidara/database` from their compiled
-`dist/`, and stale builds fail in confusing ways (validation silently absent).
+every global setup refuses any database whose name does not end in `_test`.
+`pretest` hooks rebuild workspace packages first — do not remove them; the API
+and worker resolve `@evidara/contracts` and `@evidara/database` from their
+compiled `dist/`, and stale builds fail in confusing ways (validation silently
+absent). `npm run test:unit -w @evidara/api` runs only the service-free unit
+tests (`vitest.unit.config.ts`, no global setup) — that is what CI's `unit`
+job uses.
+
+Browser end-to-end: `npm run test:e2e` (production builds + Playwright; first
+run needs `npx playwright install chromium`). The `e2e/` workspace's global
+setup resets and reseeds `evidara_test`, starts a local fixture web server on
+port 4123, and launches the built API (port 4000), web (`next start` on port
+3010), and connector worker (`CAPTURE_FIXTURE_ALLOWLIST=localhost:4123`); a
+single spec walks the plan §8 ten-step workflow: sign-in, case creation,
+manual evidence, file upload, hash verification in the provenance drawer, a
+fixture web capture observed to terminal success, captured provenance, an
+audited download whose bytes are re-hashed, and the audit timeline.
+
+Lint/format: Biome (`npm run lint`, `npm run format`; config in `biome.json`,
+generated output excluded). CI: `.github/workflows/ci.yml` with five jobs —
+quality (Biome, Prisma format/validate, typecheck), unit (no services),
+integration (API + worker suites), e2e, and build-security (production builds
++ `npm audit --omit=dev --audit-level=moderate`). Service-backed jobs start
+infrastructure with `docker compose up -d --wait` from the same pinned
+compose file as local dev.
 
 ## Architecture decisions made during implementation
 
@@ -186,6 +210,33 @@ not accidentally.
     restricted role is still required before production — documented with
     the metadata allowlist and retention policy in
     `docs/architecture/system-architecture.md` §6 "Audit trail".
+21. **Biome is the formatter and linter** (`biome.json`, recommended rules,
+    style matched to the existing codebase). It replaced nothing — no
+    tooling existed before Phase 7. Generated output (`dist`, `.next`,
+    `next-env.d.ts`, the lockfile) is excluded; everything else, including
+    JSON and CSS, is in scope. `prisma format` keeps the schema canonical
+    and CI diffs against it.
+22. **The Next.js postcss advisory is closed with an npm override**
+    (`"overrides": { "postcss": "^8.5.10" }` in the root package.json) plus
+    a regenerated lockfile. Even the latest stable Next 16 still pins the
+    vulnerable `postcss@8.4.31`; the override is semver-compatible and can
+    be dropped once Next ships a fixed dependency. `npm audit` is clean.
+23. **The e2e stack runs the API on port 4000 because `next build` bakes
+    the `/v1` rewrite destination** (`next.config.ts` reads `API_URL` at
+    build time; a runtime `API_URL` cannot move it for `next start`). The
+    e2e web server uses a dedicated port 3010, fixture server 4123;
+    everything is orchestrated by `e2e/global-setup.ts` (reset + seed test
+    DB, readiness polling, process-group teardown). Stop a dev API before
+    running e2e locally.
+24. **CI starts infrastructure with the repo's docker-compose.yml**
+    (`docker compose up -d --wait`) instead of GitHub service containers:
+    one pinned source of truth for images and health checks, and GitHub
+    service containers cannot pass MinIO its required `server` command.
+    Two deliberate plan deviations, both small: unit-test coverage
+    reporting is not wired up (no thresholds were defined; a report
+    without a gate is decorative), and no secret-scanning step is included
+    yet (gitleaks licensing varies by repo ownership) — revisit both at
+    the Phase 8 release gate.
 
 ## Environment and tooling gotchas
 
@@ -205,9 +256,22 @@ not accidentally.
   a hand-made migration folder, then `prisma migrate deploy`.
 - **Web typecheck requires generated route types**: the web `typecheck` script
   runs `next typegen && tsc --noEmit` (Next typed routes are enabled).
-- **For future browser e2e (Phase 7):** never assert on bare `[role=alert]` —
-  Next.js injects a `<next-route-announcer>` with that role on every page.
-  Use specific selectors (`p.formError`).
+- **In browser e2e, never assert on bare `[role=alert]`** — Next.js injects a
+  `<next-route-announcer>` with that role on every page. Use specific
+  selectors (`p.formError`).
+- **`next build` bakes rewrites into the build manifest.** Setting `API_URL`
+  when launching `next start` does nothing; the `/v1` proxy destination is
+  fixed at build time (this cost a full e2e debugging round — see decision
+  23).
+- **Worker/e2e tests import config-reading modules dynamically.** The worker
+  config parses `CAPTURE_FIXTURE_ALLOWLIST` at module load, so tests start
+  their fixture servers first, set the env var, then `await import(...)` the
+  execution service.
+- **npm overrides do not reconcile an already-settled lockfile.** Adding an
+  override left the vulnerable hoisted package in place (and deleting just
+  its lock entry produced a tree with the dependency missing entirely). When
+  an override will not take, regenerate `package-lock.json` from scratch and
+  re-verify with the full test suite.
 - Node ≥ 22 required; env files load in-process via `process.loadEnvFile`
   (real environment variables always win; `NODE_ENV=test` switches to
   `.env.test`, which is committed and must never hold real secrets).
@@ -216,9 +280,9 @@ not accidentally.
   silently deduplicates them.
 - **undici v7 removed `maxRedirections`** from `request()` options; it never
   follows redirects, which is exactly what the capture loop relies on.
-- `npm audit` currently reports two moderate advisories in Next.js's
-  `postcss` chain (pre-existing, unrelated to Phase 5); deal with it in
-  Phase 7 when CI adds dependency auditing.
+- `npm audit` is clean (the Next.js postcss advisories were resolved in
+  Phase 7 via the override in decision 22); CI's build-security job fails on
+  any new moderate-or-higher production advisory.
 
 ## Local dev database state (cosmetic)
 
@@ -234,24 +298,29 @@ append-only `AuditEvent` restrict FK — by design. A consented
 survive a database reset; wipe the bucket too if you want a truly clean
 slate).
 
-## Phase 7 pointers (next work)
+## Phase 8 pointers (next work)
 
-Read plan §7 "Phase 7", §8 test strategy, §9 CI pipeline. Existing coverage:
-215 vitest tests (policy matrix, sessions/CSRF, evidence ingestion incl.
-deny paths, SSRF/capture behavior against local fixtures, connector job API,
-audit interfaces incl. append-only). Remaining for Phase 7: worker
-integration tests (execute a real `web-page-capture` job against a local
-fixture server with `CAPTURE_FIXTURE_ALLOWLIST` — see
-`workers/connectors/src/execute.ts`; needs DB/Redis/MinIO like the API
-tests), a browser end-to-end test (plan §8 lists the ten steps; use
-`CAPTURE_FIXTURE_ALLOWLIST=localhost:<port>` so the capture stays off the
-public internet — hostname targets pass the API's static checks and the
-worker honors the allowlist; never assert on bare `[role=alert]`), and the
-GitHub Actions workflow (§9 jobs: quality, unit, integration, e2e,
-build-security; service containers for postgres/redis/minio; migrations
-from an empty database, not `db push`). Also resolve the two moderate
-`npm audit` advisories in Next.js's postcss chain (likely a Next.js patch
-bump) when adding the dependency-audit job.
+Read plan §7 "Phase 8" (documentation and release gate). Acceptance: a new
+developer runs the complete workflow from repository documentation alone;
+production build, tests, migrations, and dependency audit pass. Work items:
+
+- README setup/troubleshooting pass (the test/CI section was added in
+  Phase 7; verify the rest against a clean checkout, and fold in the colima
+  port-clash troubleshooting from this document if it generalizes).
+- Reconcile architecture and API documents with final milestone behavior
+  (`docs/api/endpoints.md` already lists the implemented subset; sweep the
+  rest of `docs/architecture/`).
+- Security assumptions and responsible-use notes for web capture (plan §7
+  Phase 8 deliverable; the SSRF layering in decision 15 and the
+  `CAPTURE_FIXTURE_ALLOWLIST` production-disable are the raw material).
+- Known limitations and next milestone (the audit append-only DB trigger gap
+  from decision 20, retention policy, the coverage/secret-scanning
+  deviations from decision 24, and the post-Phase-8 design milestone below).
+- CI has never run on GitHub (no remote configured at handoff time); the
+  first push should confirm all five jobs pass from a clean clone, which is
+  itself a Phase 8 acceptance criterion.
+- The branch is `master` but tooling expects `main` — reconcile before or at
+  the release gate.
 
 ## Conventions observed so far
 

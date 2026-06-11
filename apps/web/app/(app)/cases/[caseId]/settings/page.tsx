@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { type FormEvent, useState } from "react";
 import { ApiError, apiFetch } from "../../../../../lib/api";
 import { useCase } from "../case-context";
 
@@ -118,7 +118,11 @@ export default function CaseSettingsPage() {
         </div>
       ) : null}
 
-      <form className="stackedForm" onSubmit={handleSubmit} aria-busy={submitting}>
+      <form
+        className="stackedForm"
+        onSubmit={handleSubmit}
+        aria-busy={submitting}
+      >
         <fieldset disabled={!canUpdate || submitting}>
           <label htmlFor="settings-name">Case name</label>
           <input
@@ -221,7 +225,9 @@ export default function CaseSettingsPage() {
 
       {canUpdate ? (
         <section className="panel dangerPanel">
-          <h2>{item.status === "ACTIVE" ? "Archive case" : "Reactivate case"}</h2>
+          <h2>
+            {item.status === "ACTIVE" ? "Archive case" : "Reactivate case"}
+          </h2>
           <p className="muted">
             {item.status === "ACTIVE"
               ? "Archiving closes active work. The case, its evidence, and its audit trail remain readable."

@@ -1,11 +1,11 @@
 import { basename } from "node:path";
-import multipart from "@fastify/multipart";
 import {
   createManualEvidenceSchema,
   listEvidenceQuerySchema,
   updateEvidenceSchema,
   uploadEvidenceMetadataSchema,
 } from "@evidara/contracts";
+import multipart from "@fastify/multipart";
 import type { FastifyReply } from "fastify";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
@@ -62,7 +62,10 @@ export const registerEvidenceRoutes: FastifyPluginAsyncZod = async (app) => {
   app.get(
     "/cases/:caseId/evidence",
     {
-      schema: { params: caseParamsSchema, querystring: listEvidenceQuerySchema },
+      schema: {
+        params: caseParamsSchema,
+        querystring: listEvidenceQuerySchema,
+      },
     },
     async (request, reply) => {
       const authContext = requireAuthContext(request);
@@ -172,7 +175,8 @@ export const registerEvidenceRoutes: FastifyPluginAsyncZod = async (app) => {
       const fields: Record<string, string> = {};
       for await (const part of request.parts()) {
         if (part.type === "field") {
-          if (typeof part.value === "string") fields[part.fieldname] = part.value;
+          if (typeof part.value === "string")
+            fields[part.fieldname] = part.value;
           continue;
         }
 

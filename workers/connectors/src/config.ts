@@ -21,7 +21,9 @@ function loadEnvironmentFile() {
 loadEnvironmentFile();
 
 const environmentSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  NODE_ENV: z
+    .enum(["development", "test", "production"])
+    .default("development"),
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().url(),
   S3_ENDPOINT: z.string().url(),

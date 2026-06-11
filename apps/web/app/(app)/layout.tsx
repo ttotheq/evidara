@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { AuthProvider, useAuth } from "../../lib/auth";
 
 function AppShell({ children }: { children: ReactNode }) {

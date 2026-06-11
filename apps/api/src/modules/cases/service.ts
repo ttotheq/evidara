@@ -6,18 +6,18 @@ import type {
 import { database, Prisma } from "@evidara/database";
 import {
   ALL_CASE_ACTIONS,
+  type CaseAction,
   canInCase,
   canInOrganization,
-  type CaseAction,
 } from "../../authorization/policy.js";
 import {
+  type AuditContext,
   recordAuditEvent,
   recordAuthorizationDenied,
-  type AuditContext,
 } from "../../lib/audit.js";
 import {
-  organizationRoleFor,
   type AuthContext,
+  organizationRoleFor,
 } from "../../plugins/authentication.js";
 
 interface Cursor {
@@ -126,8 +126,7 @@ export async function createCase(
   idempotencyKey: string,
   auditContext: AuditContext,
 ): Promise<
-  | { outcome: "created" | "exists"; case: unknown }
-  | { outcome: "forbidden" }
+  { outcome: "created" | "exists"; case: unknown } | { outcome: "forbidden" }
 > {
   const organizationRole = organizationRoleFor(
     authContext,
@@ -217,7 +216,10 @@ export async function createCase(
   }
 }
 
-export async function loadCaseContext(authContext: AuthContext, caseId: string) {
+export async function loadCaseContext(
+  authContext: AuthContext,
+  caseId: string,
+) {
   const found = await database.case.findUnique({
     where: { id: caseId },
     include: {
@@ -285,7 +287,10 @@ export async function updateCase(
     return { outcome: "forbidden" };
   }
   if (context.found.version !== expectedVersion) {
-    return { outcome: "version_conflict", currentVersion: context.found.version };
+    return {
+      outcome: "version_conflict",
+      currentVersion: context.found.version,
+    };
   }
 
   const changes = Object.fromEntries(

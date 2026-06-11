@@ -1,15 +1,18 @@
 "use client";
 
-import type { EvidenceItemView, EvidenceListResponse } from "@evidara/contracts";
+import type {
+  EvidenceItemView,
+  EvidenceListResponse,
+} from "@evidara/contracts";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  type FormEvent,
+  type ReactNode,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
-  type FormEvent,
-  type ReactNode,
 } from "react";
 import { ApiError, apiFetch } from "../../../../../lib/api";
 import { useCase } from "../case-context";
@@ -253,7 +256,9 @@ function ManualEvidenceDialog({
           ...(form.description.trim()
             ? { description: form.description.trim() }
             : {}),
-          ...(form.sourceUrl.trim() ? { sourceUrl: form.sourceUrl.trim() } : {}),
+          ...(form.sourceUrl.trim()
+            ? { sourceUrl: form.sourceUrl.trim() }
+            : {}),
           ...(form.observedAt
             ? { observedAt: new Date(form.observedAt).toISOString() }
             : {}),
@@ -286,7 +291,10 @@ function ManualEvidenceDialog({
             maxLength={500}
             value={form.title}
             onChange={(event) =>
-              setForm((previous) => ({ ...previous, title: event.target.value }))
+              setForm((previous) => ({
+                ...previous,
+                title: event.target.value,
+              }))
             }
           />
 
@@ -582,10 +590,7 @@ export default function CaseSourcesPage() {
       if (kind) query.set("kind", kind);
       if (status) query.set("status", status);
       if (from) {
-        query.set(
-          "collectedFrom",
-          new Date(`${from}T00:00:00`).toISOString(),
-        );
+        query.set("collectedFrom", new Date(`${from}T00:00:00`).toISOString());
       }
       if (to) {
         query.set("collectedTo", new Date(`${to}T23:59:59.999`).toISOString());
@@ -668,8 +673,7 @@ export default function CaseSourcesPage() {
         <div>
           <p className="eyebrow">Source register</p>
           <p className="pageLede">
-            Every piece of evidence with its hash, provenance, and review
-            state.
+            Every piece of evidence with its hash, provenance, and review state.
           </p>
         </div>
         {canCreate ? (

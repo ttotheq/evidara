@@ -1,10 +1,22 @@
 const capabilities = [
-  ["Source register", "Captured evidence, hashes, provenance, and review state."],
+  [
+    "Source register",
+    "Captured evidence, hashes, provenance, and review state.",
+  ],
   ["Entity graph", "People, organizations, infrastructure, claims, and links."],
-  ["Timeline", "Observation, publication, collection, and event time in context."],
-  ["Notebook", "Analysis with citations that stay attached to source evidence."],
+  [
+    "Timeline",
+    "Observation, publication, collection, and event time in context.",
+  ],
+  [
+    "Notebook",
+    "Analysis with citations that stay attached to source evidence.",
+  ],
   ["AI review queue", "Evidence-bound suggestions awaiting analyst decisions."],
-  ["Report builder", "Defensible findings with methodology and an evidence appendix."],
+  [
+    "Report builder",
+    "Defensible findings with methodology and an evidence appendix.",
+  ],
 ];
 
 export default function HomePage() {
@@ -41,13 +53,24 @@ export default function HomePage() {
           </div>
           <h2>Public procurement network</h2>
           <dl>
-            <div><dt>Evidence</dt><dd>184</dd></div>
-            <div><dt>Entities</dt><dd>63</dd></div>
-            <div><dt>Reviewed</dt><dd>78%</dd></div>
+            <div>
+              <dt>Evidence</dt>
+              <dd>184</dd>
+            </div>
+            <div>
+              <dt>Entities</dt>
+              <dd>63</dd>
+            </div>
+            <div>
+              <dt>Reviewed</dt>
+              <dd>78%</dd>
+            </div>
           </dl>
           <div className="confidence">
             <span>Source coverage</span>
-            <div><i /></div>
+            <div>
+              <i />
+            </div>
           </div>
         </aside>
       </section>
@@ -68,4 +91,3 @@ export default function HomePage() {
     </main>
   );
 }
-

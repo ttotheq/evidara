@@ -1,0 +1,123 @@
+# Continuous integration for the first usable vertical slice (plan §9).
+# Service-backed jobs start PostgreSQL, Redis, and MinIO from the same pinned
+# docker-compose.yml used for local development, so CI and dev never drift.
+# No job touches the public internet from inside a test: capture tests use
+# local fixture HTTP servers exclusively.
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Formatting and lint (Biome)
+        run: npm run lint
+      - name: Prisma schema formatting and validation
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+        run: |
+          npx prisma format --schema packages/database/prisma/schema.prisma
+          git diff --exit-code -- packages/database/prisma/schema.prisma
+          npx prisma validate --schema packages/database/prisma/schema.prisma
+      - name: Type check
+        run: npm run typecheck
+
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: API unit tests
+        run: npm run test:unit -w @evidara/api
+      - name: Connector SDK tests (SSRF policy and capture fixtures)
+        run: npm test -w @evidara/connectors-sdk
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Start PostgreSQL, Redis, and MinIO
+        run: docker compose up -d --wait
+      - name: API integration tests (migrations applied to an empty database)
+        run: npm test -w @evidara/api
+      - name: Worker integration tests
+        run: npm test -w @evidara/connector-worker
+
+  e2e:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Start PostgreSQL, Redis, and MinIO
+        run: docker compose up -d --wait
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Production builds
+        run: npm run build
+      - name: Browser end-to-end test
+        run: npm run test:e2e -w @evidara/e2e
+      # Failure artifacts hold screenshots and traces of fixture data only;
+      # the suite never handles real evidence or secrets.
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-artifacts
+          path: e2e/test-results
+          retention-days: 7
+
+  build-security:
+    name: Build and dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Production builds
+        run: npm run build
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=moderate

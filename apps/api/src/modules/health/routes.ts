@@ -66,24 +66,30 @@ export async function registerHealthRoutes(app: FastifyInstance) {
     status: "ok",
   }));
 
-  app.get("/health/ready", { config: { public: true } }, async (_request, reply) => {
-    const [postgres, redisCheck, storage] = await Promise.all([
-      runCheck(() => database.$queryRaw`SELECT 1`),
-      runCheck(() => redis.ping()),
-      runCheck(() =>
-        objectStorage.send(new HeadBucketCommand({ Bucket: config.S3_BUCKET })),
-      ),
-    ]);
+  app.get(
+    "/health/ready",
+    { config: { public: true } },
+    async (_request, reply) => {
+      const [postgres, redisCheck, storage] = await Promise.all([
+        runCheck(() => database.$queryRaw`SELECT 1`),
+        runCheck(() => redis.ping()),
+        runCheck(() =>
+          objectStorage.send(
+            new HeadBucketCommand({ Bucket: config.S3_BUCKET }),
+          ),
+        ),
+      ]);
 
-    const checks = {
-      postgres,
-      redis: redisCheck,
-      objectStorage: storage,
-    };
-    const healthy = Object.values(checks).every((check) => check.ok);
+      const checks = {
+        postgres,
+        redis: redisCheck,
+        objectStorage: storage,
+      };
+      const healthy = Object.values(checks).every((check) => check.ok);
 
-    return reply
-      .status(healthy ? 200 : 503)
-      .send({ status: healthy ? "ok" : "unavailable", checks });
-  });
+      return reply
+        .status(healthy ? 200 : 503)
+        .send({ status: healthy ? "ok" : "unavailable", checks });
+    },
+  );
 }

@@ -13,4 +13,3 @@ process.on("SIGINT", () => void shutdown("SIGINT"));
 process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
 await app.listen({ host: config.HOST, port: config.PORT });
-

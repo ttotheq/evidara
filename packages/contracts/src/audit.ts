@@ -26,13 +26,7 @@ export const auditOutcomeSchema = z.enum(["success", "failure", "denied"]);
 // Metadata is allowlisted at write time: scalar display values only, never
 // secrets, evidence content, raw payloads, or storage details.
 export const auditMetadataSchema = z.record(
-  z.union([
-    z.string(),
-    z.number(),
-    z.boolean(),
-    z.null(),
-    z.array(z.string()),
-  ]),
+  z.union([z.string(), z.number(), z.boolean(), z.null(), z.array(z.string())]),
 );
 
 export const auditEventSchema = z.object({

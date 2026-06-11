@@ -13,8 +13,7 @@ const PASSWORD_HASH_VERSIONS = {
 
 export const CURRENT_PASSWORD_HASH_VERSION = 1;
 
-const currentParameters =
-  PASSWORD_HASH_VERSIONS[CURRENT_PASSWORD_HASH_VERSION];
+const currentParameters = PASSWORD_HASH_VERSIONS[CURRENT_PASSWORD_HASH_VERSION];
 
 export async function hashPassword(password: string): Promise<string> {
   return argon2.hash(password, currentParameters);

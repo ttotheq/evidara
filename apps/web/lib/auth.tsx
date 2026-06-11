@@ -3,12 +3,12 @@
 import type { Membership, SafeUser } from "@evidara/contracts";
 import {
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
-  type ReactNode,
 } from "react";
 import { apiFetch, setCsrfToken } from "./api";
 

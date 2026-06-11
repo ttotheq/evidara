@@ -39,14 +39,11 @@ async function uploadFile(
     idempotencyKey?: string;
   },
 ) {
-  const { payload, contentType } = buildMultipartPayload(
-    options.fields ?? {},
-    {
-      filename: options.filename ?? "sample.txt",
-      contentType: options.contentType ?? "text/plain",
-      content: options.content,
-    },
-  );
+  const { payload, contentType } = buildMultipartPayload(options.fields ?? {}, {
+    filename: options.filename ?? "sample.txt",
+    contentType: options.contentType ?? "text/plain",
+    content: options.content,
+  });
   return app.inject({
     method: "POST",
     url: `/v1/cases/${caseId}/evidence/files`,
@@ -317,8 +314,20 @@ describe("evidence", () => {
 
     it("replays idempotent manual creation", async () => {
       const idempotencyKey = randomUUID();
-      const first = await createManual(app, ownerSession, caseId, {}, idempotencyKey);
-      const second = await createManual(app, ownerSession, caseId, {}, idempotencyKey);
+      const first = await createManual(
+        app,
+        ownerSession,
+        caseId,
+        {},
+        idempotencyKey,
+      );
+      const second = await createManual(
+        app,
+        ownerSession,
+        caseId,
+        {},
+        idempotencyKey,
+      );
       expect(first.statusCode).toBe(201);
       expect(second.statusCode).toBe(200);
       expect(second.json().data.id).toBe(first.json().data.id);

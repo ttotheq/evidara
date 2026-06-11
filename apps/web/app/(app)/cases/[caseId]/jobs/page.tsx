@@ -6,13 +6,13 @@ import type {
 } from "@evidara/contracts";
 import Link from "next/link";
 import {
+  type FormEvent,
+  type ReactNode,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
-  type FormEvent,
-  type ReactNode,
 } from "react";
 import { ApiError, apiFetch } from "../../../../../lib/api";
 import { useCase } from "../case-context";
@@ -111,11 +111,14 @@ function CaptureDialog({
 
   return (
     <Modal title="Queue web page capture" onClose={onClose}>
-      <form onSubmit={(event) => void handleSubmit(event)} className="stackedForm">
+      <form
+        onSubmit={(event) => void handleSubmit(event)}
+        className="stackedForm"
+      >
         <p className="fieldHint">
           The capture worker fetches a single public page over http(s) and
-          stores the raw response with its SHA-256 hash and full provenance.
-          For safety it refuses internal, private, loopback, link-local, and
+          stores the raw response with its SHA-256 hash and full provenance. For
+          safety it refuses internal, private, loopback, link-local, and
           cloud-metadata addresses, re-checks every redirect, applies size and
           time limits, and never executes page JavaScript.
         </p>
@@ -402,8 +405,8 @@ export default function CaseJobsPage() {
         <div>
           <p className="eyebrow">Collection jobs</p>
           <p className="pageLede">
-            Queued, running, and completed collection runs with their
-            outcomes. Captured pages land in the source register.
+            Queued, running, and completed collection runs with their outcomes.
+            Captured pages land in the source register.
           </p>
         </div>
         {canRun ? (

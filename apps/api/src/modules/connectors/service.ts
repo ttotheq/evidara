@@ -1,9 +1,3 @@
-import type {
-  ConnectorJobView,
-  ConnectorManifestView,
-  ListConnectorJobsQuery,
-  QueueConnectorJobInput,
-} from "@evidara/contracts";
 import {
   classifyAddress,
   getConnectorManifest,
@@ -12,12 +6,18 @@ import {
   normalizeTargetUrl,
   WEB_PAGE_CAPTURE_KEY,
 } from "@evidara/connectors-sdk";
+import type {
+  ConnectorJobView,
+  ConnectorManifestView,
+  ListConnectorJobsQuery,
+  QueueConnectorJobInput,
+} from "@evidara/contracts";
 import { database, Prisma } from "@evidara/database";
 import { canInCase } from "../../authorization/policy.js";
 import {
+  type AuditContext,
   recordAuditEvent,
   recordAuthorizationDenied,
-  type AuditContext,
 } from "../../lib/audit.js";
 import { enqueueConnectorJob } from "../../lib/connector-queue.js";
 import type { AuthContext } from "../../plugins/authentication.js";

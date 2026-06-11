@@ -102,9 +102,14 @@ export async function apiFetch<T>(
     | null;
 
   if (!response.ok) {
-    const error = payload && "error" in (payload as object)
-      ? (payload as { error: { code: string; message: string; currentVersion?: number } }).error
-      : { code: "UNKNOWN", message: "The request failed." };
+    const error =
+      payload && "error" in (payload as object)
+        ? (
+            payload as {
+              error: { code: string; message: string; currentVersion?: number };
+            }
+          ).error
+        : { code: "UNKNOWN", message: "The request failed." };
     const apiError = new ApiError(response.status, error.code, error.message);
     if (typeof error.currentVersion === "number") {
       apiError.currentVersion = error.currentVersion;

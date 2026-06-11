@@ -9,9 +9,9 @@ import { database } from "@evidara/database";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { config } from "../../config.js";
 import {
+  type AuditContext,
   auditContextFrom,
   recordAuditEvent,
-  type AuditContext,
 } from "../../lib/audit.js";
 import {
   DUMMY_PASSWORD_HASH_PROMISE,
@@ -23,11 +23,7 @@ import {
   SESSION_COOKIE_NAME,
   sessionCookieOptions,
 } from "../../plugins/authentication.js";
-import {
-  createSession,
-  revokeSession,
-  rotateCsrfToken,
-} from "./sessions.js";
+import { createSession, revokeSession, rotateCsrfToken } from "./sessions.js";
 
 // Sign-in activity is audited per organization membership so organization
 // owners see their members' access events. Unknown email addresses have no
@@ -79,7 +75,7 @@ export const registerAuthRoutes: FastifyPluginAsyncZod = async (app) => {
         user?.passwordHash ?? (await DUMMY_PASSWORD_HASH_PROMISE);
       const passwordValid = await verifyPassword(passwordHash, password);
 
-      if (!user || !user.passwordHash || !passwordValid || user.disabledAt) {
+      if (!user?.passwordHash || !passwordValid || user.disabledAt) {
         if (user) {
           await recordAuthEvent({
             organizationIds: user.memberships.map(
@@ -88,7 +84,9 @@ export const registerAuthRoutes: FastifyPluginAsyncZod = async (app) => {
             actorId: user.id,
             action: "auth.login",
             outcome: "failure",
-            reason: user.disabledAt ? "account_disabled" : "invalid_credentials",
+            reason: user.disabledAt
+              ? "account_disabled"
+              : "invalid_credentials",
             context: auditContextFrom(request),
           });
         }

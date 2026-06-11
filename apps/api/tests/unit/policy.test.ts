@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  type CaseAction,
   canInCase,
   canInOrganization,
-  type CaseAction,
   type OrganizationAction,
 } from "../../src/authorization/policy.js";
 
@@ -26,7 +26,11 @@ describe("organization role matrix", () => {
     { role: undefined, action: "case.create", allowed: false },
   ];
 
-  it.each(matrix)("$role / $action -> $allowed", ({ role, action, allowed }) => {
+  it.each(matrix)("$role / $action -> $allowed", ({
+    role,
+    action,
+    allowed,
+  }) => {
     expect(canInOrganization({ organizationRole: role }, action)).toBe(allowed);
   });
 });

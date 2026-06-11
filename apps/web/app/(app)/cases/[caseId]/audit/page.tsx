@@ -134,8 +134,8 @@ export default function CaseAuditPage() {
         <div>
           <p className="eyebrow">Audit timeline</p>
           <p className="pageLede">
-            Append-only record of every mutation, download, collection run,
-            and denied attempt in this case.
+            Append-only record of every mutation, download, collection run, and
+            denied attempt in this case.
           </p>
         </div>
       </div>
@@ -171,9 +171,7 @@ export default function CaseAuditPage() {
                     <strong>
                       {ACTION_LABELS[event.action] ?? event.action}
                     </strong>
-                    <span
-                      className={`pill auditOutcome-${event.outcome}`}
-                    >
+                    <span className={`pill auditOutcome-${event.outcome}`}>
                       {OUTCOME_LABELS[event.outcome]}
                     </span>
                   </div>

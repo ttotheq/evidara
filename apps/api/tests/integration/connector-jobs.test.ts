@@ -29,8 +29,12 @@ beforeEach(async () => {
 type Session = { cookie: Record<string, string>; csrfToken: string };
 
 async function fixture(role: "OWNER" | "ANALYST" | "VIEWER" = "OWNER") {
-  const user = await createUser(`actor-${randomUUID().slice(0, 8)}@example.test`);
-  const organization = await createOrganization(`org-${randomUUID().slice(0, 8)}`);
+  const user = await createUser(
+    `actor-${randomUUID().slice(0, 8)}@example.test`,
+  );
+  const organization = await createOrganization(
+    `org-${randomUUID().slice(0, 8)}`,
+  );
   await addMember(organization.id, user.id, "MEMBER");
   const caseRecord = await createCaseFixture({
     organizationId: organization.id,

@@ -154,7 +154,9 @@ function CaseListPage() {
                   </span>
                 </td>
                 <td>
-                  <span className={`pill handling-${item.handlingLevel.toLowerCase()}`}>
+                  <span
+                    className={`pill handling-${item.handlingLevel.toLowerCase()}`}
+                  >
                     {HANDLING_LABELS[item.handlingLevel] ?? item.handlingLevel}
                   </span>
                 </td>

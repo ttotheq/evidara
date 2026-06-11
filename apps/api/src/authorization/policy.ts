@@ -1,4 +1,8 @@
-import type { CaseRole, HandlingLevel, OrganizationRole } from "@evidara/database";
+import type {
+  CaseRole,
+  HandlingLevel,
+  OrganizationRole,
+} from "@evidara/database";
 
 export type OrganizationAction =
   | "organization.members.read"

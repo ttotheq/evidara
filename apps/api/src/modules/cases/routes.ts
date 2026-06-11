@@ -7,12 +7,7 @@ import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { auditContextFrom } from "../../lib/audit.js";
 import { requireAuthContext } from "../../plugins/authentication.js";
-import {
-  createCase,
-  getCase,
-  listCases,
-  updateCase,
-} from "./service.js";
+import { createCase, getCase, listCases, updateCase } from "./service.js";
 
 const caseParamsSchema = z.object({ caseId: z.string().uuid() });
 
@@ -25,7 +20,10 @@ export const registerCaseRoutes: FastifyPluginAsyncZod = async (app) => {
       const result = await listCases(authContext, request.query);
       if (!result.ok) {
         return reply.status(400).send({
-          error: { code: "INVALID_CURSOR", message: "The cursor is not valid." },
+          error: {
+            code: "INVALID_CURSOR",
+            message: "The cursor is not valid.",
+          },
         });
       }
       return { data: result.data, nextCursor: result.nextCursor };
@@ -55,7 +53,8 @@ export const registerCaseRoutes: FastifyPluginAsyncZod = async (app) => {
         return reply.status(403).send({
           error: {
             code: "FORBIDDEN",
-            message: "You are not allowed to create cases in this organization.",
+            message:
+              "You are not allowed to create cases in this organization.",
           },
         });
       }

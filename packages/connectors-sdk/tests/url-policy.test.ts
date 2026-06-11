@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
-  classifyAddress,
-  isIpLiteral,
-  normalizeTargetUrl,
-} from "../src/web-page-capture/url-policy.js";
-import {
   decodeEntities,
   extractCanonicalUrl,
   extractReadableText,
   extractTitle,
 } from "../src/web-page-capture/extract-text.js";
+import {
+  classifyAddress,
+  isIpLiteral,
+  normalizeTargetUrl,
+} from "../src/web-page-capture/url-policy.js";
 
 describe("normalizeTargetUrl", () => {
   it("accepts http and https targets", () => {
@@ -94,7 +94,13 @@ describe("classifyAddress IPv4", () => {
     expect(verdict.category).toBe(category);
   });
 
-  const allowed = ["8.8.8.8", "1.1.1.1", "93.184.216.34", "172.32.0.1", "100.128.0.1"];
+  const allowed = [
+    "8.8.8.8",
+    "1.1.1.1",
+    "93.184.216.34",
+    "172.32.0.1",
+    "100.128.0.1",
+  ];
   it.each(allowed)("allows public %s", (address) => {
     expect(classifyAddress(address).blocked).toBe(false);
   });
@@ -158,7 +164,9 @@ describe("text extraction", () => {
 
   it("extracts the title", () => {
     expect(
-      extractTitle("<html><head><title> Hello &amp; World </title></head></html>"),
+      extractTitle(
+        "<html><head><title> Hello &amp; World </title></head></html>",
+      ),
     ).toBe("Hello & World");
     expect(extractTitle("<html><body>no title</body></html>")).toBeNull();
   });
@@ -168,7 +176,9 @@ describe("text extraction", () => {
     expect(extractCanonicalUrl(html, "https://example.com/a/b")).toBe(
       "https://example.com/canonical-page",
     );
-    expect(extractCanonicalUrl("<head></head>", "https://example.com")).toBeNull();
+    expect(
+      extractCanonicalUrl("<head></head>", "https://example.com"),
+    ).toBeNull();
   });
 
   it("drops script and style content and keeps readable text", () => {

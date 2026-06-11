@@ -1,9 +1,9 @@
 import {
-  auditActionSchema,
-  auditMetadataSchema,
   type AuditAction,
   type AuditMetadata,
   type AuditOutcome,
+  auditActionSchema,
+  auditMetadataSchema,
 } from "@evidara/contracts";
 import { database, type Prisma } from "@evidara/database";
 import type { FastifyRequest } from "fastify";

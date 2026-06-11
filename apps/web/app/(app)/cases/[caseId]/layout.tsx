@@ -3,7 +3,7 @@
 import type { CaseDetail } from "@evidara/contracts";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { ApiError, apiFetch } from "../../../../lib/api";
 import { CaseContext } from "./case-context";
 
@@ -67,8 +67,8 @@ export default function CaseLayout({ children }: { children: ReactNode }) {
         <div className="emptyState">
           <h1>Case unavailable</h1>
           <p>
-            This case does not exist or you do not have access to it. Ask a
-            case owner to add you if you expected access.
+            This case does not exist or you do not have access to it. Ask a case
+            owner to add you if you expected access.
           </p>
           <Link className="buttonSecondary" href="/cases">
             Back to cases

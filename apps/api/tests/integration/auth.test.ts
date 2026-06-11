@@ -1,6 +1,6 @@
+import { database } from "@evidara/database";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../../src/app.js";
-import { database } from "@evidara/database";
 import {
   addMember,
   createOrganization,

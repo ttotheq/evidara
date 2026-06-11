@@ -125,20 +125,20 @@ enum SuggestionType {
 }
 
 model User {
-  id              String             @id @default(uuid()) @db.Uuid
-  email           String             @unique
+  id              String               @id @default(uuid()) @db.Uuid
+  email           String               @unique
   displayName     String
   passwordHash    String?
   disabledAt      DateTime?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
   memberships     OrganizationMember[]
   caseMemberships CaseMember[]
-  createdCases    Case[]             @relation("CaseCreator")
-  auditEvents     AuditEvent[]        @relation("AuditActor")
-  evidence        EvidenceItem[]      @relation("EvidenceCreator")
-  uploads         Upload[]            @relation("UploadActor")
-  connectorJobs   ConnectorJob[]      @relation("ConnectorJobRequester")
+  createdCases    Case[]               @relation("CaseCreator")
+  auditEvents     AuditEvent[]         @relation("AuditActor")
+  evidence        EvidenceItem[]       @relation("EvidenceCreator")
+  uploads         Upload[]             @relation("UploadActor")
+  connectorJobs   ConnectorJob[]       @relation("ConnectorJobRequester")
   sessions        Session[]
 }
 
@@ -181,34 +181,34 @@ model OrganizationMember {
 }
 
 model Case {
-  id                    String          @id @default(uuid()) @db.Uuid
-  organizationId        String          @db.Uuid
-  createdById           String          @db.Uuid
-  name                  String
-  objective             String
-  scope                 String
-  justification         String
-  prohibitedCollection String[]        @default([])
-  handlingLevel         HandlingLevel   @default(INTERNAL)
-  status                CaseStatus      @default(ACTIVE)
-  idempotencyKey        String?
-  version               Int             @default(1)
-  archivedAt            DateTime?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
-  organization          Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  createdBy             User            @relation("CaseCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  members               CaseMember[]
-  evidence              EvidenceItem[]
-  uploads               Upload[]
-  connectorJobs         ConnectorJob[]
-  entities              Entity[]
-  relations             EntityRelation[]
-  notes                 Note[]
-  findings              Finding[]
-  aiRuns                AiRun[]
-  reports               Report[]
-  auditEvents           AuditEvent[]
+  id                   String           @id @default(uuid()) @db.Uuid
+  organizationId       String           @db.Uuid
+  createdById          String           @db.Uuid
+  name                 String
+  objective            String
+  scope                String
+  justification        String
+  prohibitedCollection String[]         @default([])
+  handlingLevel        HandlingLevel    @default(INTERNAL)
+  status               CaseStatus       @default(ACTIVE)
+  idempotencyKey       String?
+  version              Int              @default(1)
+  archivedAt           DateTime?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  organization         Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdBy            User             @relation("CaseCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  members              CaseMember[]
+  evidence             EvidenceItem[]
+  uploads              Upload[]
+  connectorJobs        ConnectorJob[]
+  entities             Entity[]
+  relations            EntityRelation[]
+  notes                Note[]
+  findings             Finding[]
+  aiRuns               AiRun[]
+  reports              Report[]
+  auditEvents          AuditEvent[]
 
   @@unique([organizationId, idempotencyKey])
   @@index([organizationId, status, updatedAt])
@@ -243,39 +243,39 @@ model EvidenceBlob {
 }
 
 model EvidenceItem {
-  id             String         @id @default(uuid()) @db.Uuid
-  caseId         String         @db.Uuid
-  blobId         String?        @db.Uuid
-  createdById    String         @db.Uuid
-  kind           EvidenceKind
-  status         EvidenceStatus @default(UNREVIEWED)
-  handlingLevel  HandlingLevel
-  title          String
-  description    String?
-  originalFilename String?
-  sourceUrl      String?
-  canonicalUrl   String?
-  sourceMethod   String
-  publishedAt    DateTime?
-  observedAt     DateTime?
-  collectedAt    DateTime       @default(now())
+  id                     String                 @id @default(uuid()) @db.Uuid
+  caseId                 String                 @db.Uuid
+  blobId                 String?                @db.Uuid
+  createdById            String                 @db.Uuid
+  kind                   EvidenceKind
+  status                 EvidenceStatus         @default(UNREVIEWED)
+  handlingLevel          HandlingLevel
+  title                  String
+  description            String?
+  originalFilename       String?
+  sourceUrl              String?
+  canonicalUrl           String?
+  sourceMethod           String
+  publishedAt            DateTime?
+  observedAt             DateTime?
+  collectedAt            DateTime               @default(now())
   collectionCompleteness CollectionCompleteness @default(COMPLETE)
-  analystNotes   String?
-  rawMetadata    Json
-  provenance     Json?
-  connectorKey   String?
-  connectorVersion String?
-  idempotencyKey String?
-  version        Int            @default(1)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  case           Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  blob           EvidenceBlob?  @relation(fields: [blobId], references: [id], onDelete: Restrict)
-  createdBy      User           @relation("EvidenceCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  entitySources  EntitySource[]
-  relationSources RelationSource[]
-  citations      Citation[]
-  resultOfJobs   ConnectorJob[]   @relation("JobResultEvidence")
+  analystNotes           String?
+  rawMetadata            Json
+  provenance             Json?
+  connectorKey           String?
+  connectorVersion       String?
+  idempotencyKey         String?
+  version                Int                    @default(1)
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  case                   Case                   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  blob                   EvidenceBlob?          @relation(fields: [blobId], references: [id], onDelete: Restrict)
+  createdBy              User                   @relation("EvidenceCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  entitySources          EntitySource[]
+  relationSources        RelationSource[]
+  citations              Citation[]
+  resultOfJobs           ConnectorJob[]         @relation("JobResultEvidence")
 
   @@unique([caseId, idempotencyKey])
   @@index([caseId, status, collectedAt])
@@ -306,29 +306,29 @@ model Upload {
 }
 
 model ConnectorJob {
-  id               String      @id @default(uuid()) @db.Uuid
-  caseId           String      @db.Uuid
-  requestedById    String      @db.Uuid
+  id               String             @id @default(uuid()) @db.Uuid
+  caseId           String             @db.Uuid
+  requestedById    String             @db.Uuid
   connectorKey     String
   connectorVersion String
   input            Json
   targetSummary    String?
-  status           JobStatus   @default(QUEUED)
+  status           JobStatus          @default(QUEUED)
   idempotencyKey   String
-  attemptCount     Int         @default(0)
-  progress         Int         @default(0)
+  attemptCount     Int                @default(0)
+  progress         Int                @default(0)
   statusMessage    String?
   errorCode        String?
   errorMessage     String?
-  queuedAt         DateTime    @default(now())
+  queuedAt         DateTime           @default(now())
   startedAt        DateTime?
   completedAt      DateTime?
   cancelledAt      DateTime?
   nextRetryAt      DateTime?
-  resultEvidenceId String?     @db.Uuid
-  case             Case        @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  requestedBy      User        @relation("ConnectorJobRequester", fields: [requestedById], references: [id], onDelete: Restrict)
-  resultEvidence   EvidenceItem? @relation("JobResultEvidence", fields: [resultEvidenceId], references: [id], onDelete: SetNull)
+  resultEvidenceId String?            @db.Uuid
+  case             Case               @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  requestedBy      User               @relation("ConnectorJobRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  resultEvidence   EvidenceItem?      @relation("JobResultEvidence", fields: [resultEvidenceId], references: [id], onDelete: SetNull)
   attempts         ConnectorAttempt[]
 
   @@unique([caseId, idempotencyKey])
@@ -337,13 +337,13 @@ model ConnectorJob {
 }
 
 model ConnectorAttempt {
-  id            String    @id @default(uuid()) @db.Uuid
-  jobId         String    @db.Uuid
+  id            String       @id @default(uuid()) @db.Uuid
+  jobId         String       @db.Uuid
   attemptNumber Int
-  startedAt     DateTime  @default(now())
+  startedAt     DateTime     @default(now())
   completedAt   DateTime?
   succeeded     Boolean?
-  retryable     Boolean   @default(false)
+  retryable     Boolean      @default(false)
   errorCode     String?
   errorMessage  String?
   job           ConnectorJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
@@ -386,22 +386,22 @@ model EntitySource {
 }
 
 model EntityRelation {
-  id            String           @id @default(uuid()) @db.Uuid
-  caseId        String           @db.Uuid
-  sourceEntityId String          @db.Uuid
-  targetEntityId String          @db.Uuid
-  type          RelationType
-  attributes    Json
-  confidence    Int
-  handlingLevel HandlingLevel
-  reviewStatus  ReviewDecision   @default(PENDING)
-  version       Int              @default(1)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  case          Case             @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  sourceEntity  Entity           @relation("RelationSourceEntity", fields: [sourceEntityId], references: [id], onDelete: Cascade)
-  targetEntity  Entity           @relation("RelationTargetEntity", fields: [targetEntityId], references: [id], onDelete: Cascade)
-  sources       RelationSource[]
+  id             String           @id @default(uuid()) @db.Uuid
+  caseId         String           @db.Uuid
+  sourceEntityId String           @db.Uuid
+  targetEntityId String           @db.Uuid
+  type           RelationType
+  attributes     Json
+  confidence     Int
+  handlingLevel  HandlingLevel
+  reviewStatus   ReviewDecision   @default(PENDING)
+  version        Int              @default(1)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  case           Case             @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  sourceEntity   Entity           @relation("RelationSourceEntity", fields: [sourceEntityId], references: [id], onDelete: Cascade)
+  targetEntity   Entity           @relation("RelationTargetEntity", fields: [targetEntityId], references: [id], onDelete: Cascade)
+  sources        RelationSource[]
 
   @@index([caseId, type])
   @@index([sourceEntityId, targetEntityId])
@@ -432,48 +432,48 @@ model Note {
 }
 
 model Finding {
-  id             String         @id @default(uuid()) @db.Uuid
-  caseId         String         @db.Uuid
-  createdById    String         @db.Uuid
-  title          String
-  statement      String
-  confidence     Int
+  id                 String         @id @default(uuid()) @db.Uuid
+  caseId             String         @db.Uuid
+  createdById        String         @db.Uuid
+  title              String
+  statement          String
+  confidence         Int
   estimativeLanguage String
-  reviewStatus   ReviewDecision @default(PENDING)
-  version        Int            @default(1)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  case           Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  citations      Citation[]
+  reviewStatus       ReviewDecision @default(PENDING)
+  version            Int            @default(1)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  case               Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  citations          Citation[]
 }
 
 model Citation {
-  id          String       @id @default(uuid()) @db.Uuid
-  findingId   String?      @db.Uuid
-  evidenceId  String       @db.Uuid
-  locator     String?
-  quotedText  String?
-  createdAt   DateTime     @default(now())
-  finding     Finding?     @relation(fields: [findingId], references: [id], onDelete: Cascade)
-  evidence    EvidenceItem @relation(fields: [evidenceId], references: [id], onDelete: Restrict)
+  id         String       @id @default(uuid()) @db.Uuid
+  findingId  String?      @db.Uuid
+  evidenceId String       @db.Uuid
+  locator    String?
+  quotedText String?
+  createdAt  DateTime     @default(now())
+  finding    Finding?     @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  evidence   EvidenceItem @relation(fields: [evidenceId], references: [id], onDelete: Restrict)
 }
 
 model AiRun {
-  id              String           @id @default(uuid()) @db.Uuid
-  caseId          String           @db.Uuid
-  requestedById   String           @db.Uuid
+  id              String         @id @default(uuid()) @db.Uuid
+  caseId          String         @db.Uuid
+  requestedById   String         @db.Uuid
   workflow        SuggestionType
   provider        String
   model           String
   promptVersion   String
   contextManifest Json
   parameters      Json
-  status          JobStatus        @default(QUEUED)
+  status          JobStatus      @default(QUEUED)
   errorMessage    String?
-  createdAt       DateTime         @default(now())
+  createdAt       DateTime       @default(now())
   startedAt       DateTime?
   completedAt     DateTime?
-  case            Case             @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  case            Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
   suggestions     AiSuggestion[]
 
   @@index([caseId, createdAt])
@@ -493,38 +493,38 @@ model AiSuggestion {
 }
 
 model Report {
-  id              String         @id @default(uuid()) @db.Uuid
-  caseId          String         @db.Uuid
-  createdById     String         @db.Uuid
-  title           String
-  document        Json
-  reviewStatus    ReviewDecision @default(PENDING)
-  version         Int            @default(1)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  case            Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  exports         ReportExport[]
+  id           String         @id @default(uuid()) @db.Uuid
+  caseId       String         @db.Uuid
+  createdById  String         @db.Uuid
+  title        String
+  document     Json
+  reviewStatus ReviewDecision @default(PENDING)
+  version      Int            @default(1)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  case         Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  exports      ReportExport[]
 }
 
 model ReportExport {
-  id            String      @id @default(uuid()) @db.Uuid
-  reportId      String      @db.Uuid
-  requestedById String      @db.Uuid
+  id            String    @id @default(uuid()) @db.Uuid
+  reportId      String    @db.Uuid
+  requestedById String    @db.Uuid
   format        String
-  status        JobStatus   @default(QUEUED)
+  status        JobStatus @default(QUEUED)
   objectKey     String?
   manifest      Json?
   errorMessage  String?
-  createdAt     DateTime    @default(now())
+  createdAt     DateTime  @default(now())
   completedAt   DateTime?
-  report        Report      @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  report        Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
 }
 
 model AuditEvent {
-  id             String        @id @default(uuid()) @db.Uuid
-  organizationId String        @db.Uuid
-  caseId         String?       @db.Uuid
-  actorId        String?       @db.Uuid
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  caseId         String?      @db.Uuid
+  actorId        String?      @db.Uuid
   action         String
   resourceType   String
   resourceId     String?
@@ -532,10 +532,10 @@ model AuditEvent {
   requestId      String?
   ipHash         String?
   metadata       Json
-  createdAt      DateTime      @default(now())
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  case           Case?         @relation(fields: [caseId], references: [id], onDelete: Restrict)
-  actor          User?         @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  case           Case?        @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  actor          User?        @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, createdAt])
   @@index([caseId, createdAt])
@@ -551,4 +551,3 @@ model OutboxEvent {
 
   @@index([publishedAt, createdAt])
 }
-

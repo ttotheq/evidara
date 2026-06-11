@@ -1,22 +1,22 @@
 import { lookup } from "node:dns/promises";
+import { promisify } from "node:util";
 import {
   brotliDecompress,
   gunzip,
   inflate,
   constants as zlibConstants,
 } from "node:zlib";
-import { promisify } from "node:util";
 import { Agent, request } from "undici";
-import {
-  classifyAddress,
-  isIpLiteral,
-  normalizeTargetUrl,
-} from "./url-policy.js";
 import {
   extractCanonicalUrl,
   extractReadableText,
   extractTitle,
 } from "./extract-text.js";
+import {
+  classifyAddress,
+  isIpLiteral,
+  normalizeTargetUrl,
+} from "./url-policy.js";
 
 const gunzipAsync = promisify(gunzip);
 const inflateAsync = promisify(inflate);
@@ -162,10 +162,12 @@ function pinnedAgent(addresses: ResolvedAddress[]): Agent {
           (options as { all?: boolean }).all &&
           typeof callback === "function"
         ) {
-          (callback as unknown as (
-            error: Error | null,
-            result: { address: string; family: number }[],
-          ) => void)(null, addresses);
+          (
+            callback as unknown as (
+              error: Error | null,
+              result: { address: string; family: number }[],
+            ) => void
+          )(null, addresses);
           return;
         }
         callback(null, first.address, first.family);
@@ -258,9 +260,7 @@ function combinedSignal(
   external?: AbortSignal,
 ): AbortSignal {
   const timeoutSignal = AbortSignal.timeout(Math.max(deadlineMs, 1));
-  return external
-    ? AbortSignal.any([external, timeoutSignal])
-    : timeoutSignal;
+  return external ? AbortSignal.any([external, timeoutSignal]) : timeoutSignal;
 }
 
 // Captures a single web page over http(s) without executing page JavaScript.
@@ -324,7 +324,7 @@ export async function captureWebPage(
 
     try {
       if (REDIRECT_STATUSES.has(response.statusCode)) {
-        const location = response.headers["location"];
+        const location = response.headers.location;
         await response.body.dump();
         const locationValue = Array.isArray(location) ? location[0] : location;
         if (!locationValue) {
@@ -376,10 +376,7 @@ export async function captureWebPage(
         .split(";")[0]
         ?.trim()
         .toLowerCase();
-      if (
-        !contentType ||
-        !options.allowedContentTypes.includes(contentType)
-      ) {
+      if (!contentType || !options.allowedContentTypes.includes(contentType)) {
         await response.body.dump();
         throw new CaptureError(
           "UNSUPPORTED_CONTENT_TYPE",

@@ -21,7 +21,9 @@ function loadEnvironmentFile() {
 loadEnvironmentFile();
 
 const environmentSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  NODE_ENV: z
+    .enum(["development", "test", "production"])
+    .default("development"),
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().url(),
   AI_CONCURRENCY: z.coerce.number().int().min(1).max(16).default(2),

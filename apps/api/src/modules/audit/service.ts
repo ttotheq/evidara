@@ -3,11 +3,11 @@ import type {
   AuditMetadata,
   ListAuditEventsQuery,
 } from "@evidara/contracts";
-import { database, Prisma } from "@evidara/database";
+import { database, type Prisma } from "@evidara/database";
 import { canInCase } from "../../authorization/policy.js";
 import {
-  recordAuthorizationDenied,
   type AuditContext,
+  recordAuthorizationDenied,
 } from "../../lib/audit.js";
 import type { AuthContext } from "../../plugins/authentication.js";
 import { loadCaseContext } from "../cases/service.js";

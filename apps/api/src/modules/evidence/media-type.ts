@@ -27,7 +27,9 @@ export function looksLikeText(sample: Buffer): boolean {
   return false;
 }
 
-export function normalizeDeclaredType(declared: string | undefined): string | null {
+export function normalizeDeclaredType(
+  declared: string | undefined,
+): string | null {
   if (!declared) return null;
   const bare = declared.split(";")[0]?.trim().toLowerCase();
   return bare && bare.length > 0 ? bare : null;

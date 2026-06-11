@@ -21,4 +21,3 @@ export interface ReportExporter {
   mediaType: string;
   export(document: ReportDocument): Promise<Uint8Array>;
 }
-

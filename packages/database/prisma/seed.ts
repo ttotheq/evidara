@@ -23,14 +23,19 @@ function loadEnvironmentFile() {
 loadEnvironmentFile();
 
 const seedSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  NODE_ENV: z
+    .enum(["development", "test", "production"])
+    .default("development"),
   SEED_OWNER_EMAIL: z.string().email(),
   SEED_OWNER_PASSWORD: z.string().min(12),
   SEED_OWNER_NAME: z.string().min(1),
   SEED_ORGANIZATION_NAME: z.string().min(1),
   SEED_ORGANIZATION_SLUG: z
     .string()
-    .regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/, "lowercase letters, digits, and hyphens"),
+    .regex(
+      /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/,
+      "lowercase letters, digits, and hyphens",
+    ),
 });
 
 const parsed = seedSchema.safeParse(process.env);
@@ -46,7 +51,9 @@ if (!parsed.success) {
 const seedConfig = parsed.data;
 
 if (seedConfig.NODE_ENV === "production") {
-  console.error("Seeding is a development and test convenience; refusing to run in production.");
+  console.error(
+    "Seeding is a development and test convenience; refusing to run in production.",
+  );
   process.exit(1);
 }
 
