@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect } from "react";
 import { AuthProvider, useAuth } from "../../lib/auth";
+import { ThemeToggle } from "../../lib/theme";
 
 function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -69,6 +70,7 @@ function AppShell({ children }: { children: ReactNode }) {
           )}
         </div>
         <div className="topbarRight">
+          <ThemeToggle />
           <span className="userName">{auth.user.displayName}</span>
           <button
             type="button"
