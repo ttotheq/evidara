@@ -9,12 +9,37 @@ Last commit at handoff: Phase 8 documentation and release gate (see `git log`)
 Evidara is an open-source, evidence-centered OSINT investigation workspace
 (TypeScript monorepo: Next.js web, Fastify API, BullMQ workers, PostgreSQL,
 Redis, MinIO). The active milestone is the
-[first usable vertical slice](plans/first-usable-vertical-slice.md) — an
-eight-phase plan covering auth, cases, evidence ingestion, secure web capture,
-audit, tests, and CI. **Where any other document disagrees with that plan, the
-plan wins.**
+[design milestone](plans/design-milestone.md) (tokens, components, and
+interaction design for the post-slice surfaces); the completed
+[first usable vertical slice](plans/first-usable-vertical-slice.md) precedes
+it. **Where any other document disagrees with the active plan, the plan
+wins.**
 
-## Milestone status: complete (8 of 8 phases)
+## Design milestone status: 3 of 7 phases complete
+
+| Phase | Scope | Status | Commit |
+| --- | --- | --- | --- |
+| 1 | Token foundation, dark + light themes, theme toggle | Done | `91a8f12` |
+| 2 | Component catalog + dev-only /design-system styleguide | Done | `19aea18` |
+| 3 | Synthetic demo dataset (typed fixtures, ontology-validated) | Done | see `git log` |
+| 4 | Entity graph interaction design + prototype | **Next** | — |
+| 5 | Timeline and map interaction design + prototypes | Pending | — |
+| 6 | Notebook interaction design + prototype | Pending | — |
+| 7 | Synthesis and next-milestone input | Pending | — |
+
+Decisions resolved in plan §3: prototypes are dev-only routes in the real
+app; both themes ship with dark as default; the graph spec assumes SVG/DOM
+rendering. Design references: `docs/design/tokens.md` (token set, WCAG
+contrast matrix, audit decisions incl. deferred spacing normalization) and
+`docs/design/components.md` (component catalog; no dead selectors, no
+pixel-affecting consolidations). The demo dataset for Phases 4–6 lives in
+`apps/web/lib/demo/` ("Berth 14 narrative network": 59 entities across all
+16 ontology types, 80 relations across all 13 types, 30 events, 15
+locations, 12 evidence stubs) — self-validating at import outside
+production; consumed only by prototype routes. The `/design-system` route
+and the demo fixtures are 404/absent in production builds.
+
+## Vertical slice status: complete (8 of 8 phases)
 
 | Phase | Scope | Status | Commit |
 | --- | --- | --- | --- |
