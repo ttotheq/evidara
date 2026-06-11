@@ -1,6 +1,8 @@
 # Evidara MVP System Architecture
 
-Status: proposed baseline  
+Status: baseline; the first usable vertical slice (auth, cases, evidence,
+web capture, audit, tests, CI) is implemented — sections describing later
+surfaces (AI, search projections, exports, outbox) remain target design  
 Source: `docs/requirements/evidara-osint-platform-prd.md`
 
 ## 1. Architecture goals
@@ -117,6 +119,9 @@ They do not read another module's tables directly from route handlers.
 - High-risk actions require recent authentication and can require reviewer
   approval.
 - Logs exclude evidence content, connector secrets, tokens, and personal data.
+- Web capture SSRF defenses, deployment assumptions, and responsible-use
+  boundaries are documented in
+  [`docs/security/web-capture.md`](../security/web-capture.md).
 
 ### Audit trail
 
@@ -152,9 +157,14 @@ They do not read another module's tables directly from route handlers.
 ## 7. Reliability and observability
 
 - All command endpoints accept an `Idempotency-Key`.
-- Queue jobs use stable IDs and exponential backoff with bounded retries.
+- Queue jobs use stable IDs. As implemented, connector jobs run exactly once
+  per queue entry; retries are explicit, analyst-initiated, audited, and
+  bounded (five attempts), with automatic backoff deferred until wanted.
 - A dead-letter queue preserves failed payload metadata without secrets.
-- Database transactions use an outbox table for reliable event publication.
+- Database transactions use an outbox table for reliable event publication
+  (target design: the `OutboxEvent` table exists but is not yet wired up;
+  the implemented flow enqueues after commit and marks enqueue failures as
+  retryable).
 - Health endpoints distinguish liveness from dependency readiness.
 - Structured logs carry `request_id`, `organization_id`, `case_id`, and
   `job_id` where applicable.

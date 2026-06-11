@@ -5,8 +5,11 @@
 ```text
 /(auth)/login
 /(app)/cases
+/(app)/cases/new
 /(app)/cases/[caseId]/overview
 /(app)/cases/[caseId]/sources
+/(app)/cases/[caseId]/jobs
+/(app)/cases/[caseId]/audit
 /(app)/cases/[caseId]/graph
 /(app)/cases/[caseId]/timeline
 /(app)/cases/[caseId]/map
@@ -17,6 +20,10 @@
 /(app)/admin/connectors
 /(app)/admin/members
 ```
+
+Implemented today: `login`, `cases`, `cases/new`, and the case workspace
+tabs `overview`, `sources`, `jobs`, `audit`, and `settings`. The remaining
+routes are target surface for later milestones.
 
 ## Composition
 

@@ -1,6 +1,6 @@
 # First Usable Vertical Slice Delivery Plan
 
-Status: ready for implementation  
+Status: implemented (all eight phases complete; one commit per phase)  
 Milestone: authenticated case-to-evidence workflow  
 Source requirements: `docs/requirements/evidara-osint-platform-prd.md`  
 Architecture baseline: `docs/architecture/system-architecture.md`

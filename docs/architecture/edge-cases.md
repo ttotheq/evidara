@@ -1,5 +1,12 @@
 # Edge Cases and Failure Policy
 
+This is the standing failure policy for the full product. Items touching
+surfaces not yet built (ontology, AI, search, exports) bind future
+implementation; the implemented slice satisfies the collection,
+collaboration, and operations rows except where a known limitation is
+recorded in the README (rate-limit enforcement, robots/terms evaluation,
+outbox publication, automatic retries with jitter).
+
 ## Collection
 
 - Duplicate submission: stable idempotency keys return the original job.

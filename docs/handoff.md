@@ -1,8 +1,8 @@
 # Evidara Handoff
 
 Date: 2026-06-10
-Branch: `master` (note: tooling expects `main` as the eventual PR target; not yet reconciled)
-Last commit at handoff: Phase 7 automated testing and CI (see `git log`)
+Branch: `main` (renamed from `master` at the Phase 8 release gate; no remote configured yet)
+Last commit at handoff: Phase 8 documentation and release gate (see `git log`)
 
 ## What this project is
 
@@ -14,7 +14,7 @@ eight-phase plan covering auth, cases, evidence ingestion, secure web capture,
 audit, tests, and CI. **Where any other document disagrees with that plan, the
 plan wins.**
 
-## Milestone status: 7 of 8 phases complete
+## Milestone status: complete (8 of 8 phases)
 
 | Phase | Scope | Status | Commit |
 | --- | --- | --- | --- |
@@ -24,11 +24,13 @@ plan wins.**
 | 4 | Evidence ingestion and source register | Done | `e87e1d6` |
 | 5 | Secure web-page capture connector | Done | `f66f8e8` |
 | 6 | Audit interfaces | Done | `b5e93a6` |
-| 7 | Automated testing and CI | Done | see `git log` |
-| 8 | Documentation and release gate | **Next** | — |
+| 7 | Automated testing and CI | Done | `257c9b7` |
+| 8 | Documentation and release gate | Done | see `git log` |
 
-Each phase landed as one commit on a building, tested tree. Phase 8 starts at
-plan §7 "Phase 8" (documentation and release gate).
+Each phase landed as one commit on a building, tested tree. Known
+limitations at milestone close are recorded in the README ("Status and known
+limitations"); web capture security assumptions live in
+`docs/security/web-capture.md`.
 
 **After Phase 8** (decided 2026-06-10): the next planning artifact is a
 dedicated design milestone — formalize the CSS visual language into a
@@ -298,29 +300,22 @@ append-only `AuditEvent` restrict FK — by design. A consented
 survive a database reset; wipe the bucket too if you want a truly clean
 slate).
 
-## Phase 8 pointers (next work)
+## Next work
 
-Read plan §7 "Phase 8" (documentation and release gate). Acceptance: a new
-developer runs the complete workflow from repository documentation alone;
-production build, tests, migrations, and dependency audit pass. Work items:
+The vertical-slice milestone is closed. In order:
 
-- README setup/troubleshooting pass (the test/CI section was added in
-  Phase 7; verify the rest against a clean checkout, and fold in the colima
-  port-clash troubleshooting from this document if it generalizes).
-- Reconcile architecture and API documents with final milestone behavior
-  (`docs/api/endpoints.md` already lists the implemented subset; sweep the
-  rest of `docs/architecture/`).
-- Security assumptions and responsible-use notes for web capture (plan §7
-  Phase 8 deliverable; the SSRF layering in decision 15 and the
-  `CAPTURE_FIXTURE_ALLOWLIST` production-disable are the raw material).
-- Known limitations and next milestone (the audit append-only DB trigger gap
-  from decision 20, retention policy, the coverage/secret-scanning
-  deviations from decision 24, and the post-Phase-8 design milestone below).
-- CI has never run on GitHub (no remote configured at handoff time); the
-  first push should confirm all five jobs pass from a clean clone, which is
-  itself a Phase 8 acceptance criterion.
-- The branch is `master` but tooling expects `main` — reconcile before or at
-  the release gate.
+1. **Publish and confirm CI.** No git remote is configured; CI has never
+   executed on GitHub. On first push, confirm all five jobs pass from a
+   clean clone (the one release-gate acceptance criterion that cannot be
+   verified locally — every job's commands were run locally and pass).
+2. **Design milestone** (decided 2026-06-10, see below): formalize the CSS
+   visual language into a documented token/component system and do
+   interaction design for the post-slice surfaces before any further
+   feature code.
+3. **Carry-forward engineering debts** (recorded in README known
+   limitations): audit append-only database enforcement, audit retention
+   policy, connector rate-limit enforcement, outbox wiring, membership
+   management, CI coverage reporting and secret scanning.
 
 ## Conventions observed so far
 
