@@ -14,8 +14,10 @@ import {
 } from "fastify-type-provider-zod";
 import { createSchema, createYoga } from "graphql-yoga";
 import { config } from "./config.js";
+import { closeConnectorQueue } from "./lib/connector-queue.js";
 import { registerAuthRoutes } from "./modules/auth/routes.js";
 import { registerCaseRoutes } from "./modules/cases/routes.js";
+import { registerConnectorRoutes } from "./modules/connectors/routes.js";
 import { registerEvidenceRoutes } from "./modules/evidence/routes.js";
 import { registerHealthRoutes } from "./modules/health/routes.js";
 import { authenticationPlugin } from "./plugins/authentication.js";
@@ -97,6 +99,13 @@ export async function buildApp() {
   await app.register(registerAuthRoutes, { prefix: "/v1" });
   await app.register(registerCaseRoutes, { prefix: "/v1" });
   await app.register(registerEvidenceRoutes, { prefix: "/v1" });
+  await app.register(registerConnectorRoutes, { prefix: "/v1" });
+
+  // The queue connection is a lazy singleton; it reopens if another app
+  // instance enqueues after this one closes (relevant only in tests).
+  app.addHook("onClose", async () => {
+    await closeConnectorQueue();
+  });
 
   app.setErrorHandler((error, request, reply) => {
     const normalizedError = error as Error & {

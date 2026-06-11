@@ -55,6 +55,28 @@ export default async function globalSetup() {
   });
 
   await ensureTestBucket();
+  await drainTestQueue();
+}
+
+// API tests enqueue real queue entries that no worker drains; clear them so
+// state cannot accumulate across runs.
+async function drainTestQueue() {
+  const redisUrl = new URL(process.env.REDIS_URL ?? "");
+  const { Queue } = await import("bullmq");
+  const queue = new Queue("connector-jobs", {
+    connection: {
+      host: redisUrl.hostname,
+      port: Number(redisUrl.port || 6379),
+      ...(redisUrl.pathname.length > 1
+        ? { db: Number(redisUrl.pathname.slice(1)) }
+        : {}),
+    },
+  });
+  try {
+    await queue.obliterate({ force: true });
+  } finally {
+    await queue.close();
+  }
 }
 
 async function ensureTestBucket() {

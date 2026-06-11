@@ -50,3 +50,36 @@ export interface Connector<TInput extends z.ZodType = z.ZodType> {
   ): Promise<ConnectorResult>;
 }
 
+export {
+  getConnectorManifest,
+  listConnectorManifests,
+} from "./registry.js";
+export {
+  WEB_PAGE_CAPTURE_KEY,
+  WEB_PAGE_CAPTURE_VERSION,
+  webPageCaptureInputSchema,
+  webPageCaptureManifest,
+  type WebPageCaptureInput,
+} from "./web-page-capture/manifest.js";
+export {
+  CaptureError,
+  captureWebPage,
+  type CaptureErrorCode,
+  type CaptureOptions,
+  type WebPageCapture,
+} from "./web-page-capture/capture.js";
+export {
+  classifyAddress,
+  isIpLiteral,
+  normalizeTargetUrl,
+  type AddressVerdict,
+  type UrlRejectionCode,
+  type UrlVerdict,
+} from "./web-page-capture/url-policy.js";
+export {
+  decodeEntities,
+  extractCanonicalUrl,
+  extractReadableText,
+  extractTitle,
+} from "./web-page-capture/extract-text.js";
+

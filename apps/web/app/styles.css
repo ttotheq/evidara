@@ -222,6 +222,10 @@ fieldset:disabled { opacity: .6; }
 .loadMoreRow { display: flex; justify-content: center; padding: 20px 0; }
 .filterBar input[type="date"] { width: auto; }
 
+.drawerSectionTitle { margin: 24px 0 8px; font-size: 14px; color: var(--muted); }
+.attemptList { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.8; }
+.dataTable progress { width: 90px; accent-color: var(--accent); }
+
 @media (max-width: 760px) {
   .overviewGrid { grid-template-columns: 1fr; }
   .pageHeader, .caseHeaderBar { flex-direction: column; align-items: start; }

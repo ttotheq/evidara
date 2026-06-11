@@ -2,7 +2,7 @@
 
 Date: 2026-06-10
 Branch: `master` (note: tooling expects `main` as the eventual PR target; not yet reconciled)
-Last commit at handoff: Phase 4 evidence ingestion (see `git log`)
+Last commit at handoff: Phase 5 secure web capture (see `git log`)
 
 ## What this project is
 
@@ -14,23 +14,26 @@ eight-phase plan covering auth, cases, evidence ingestion, secure web capture,
 audit, tests, and CI. **Where any other document disagrees with that plan, the
 plan wins.**
 
-## Milestone status: 4 of 8 phases complete
+## Milestone status: 5 of 8 phases complete
 
 | Phase | Scope | Status | Commit |
 | --- | --- | --- | --- |
 | 1 | Dev environment, initial migration, seed, readiness checks | Done | `733e64a` |
 | 2 | Sessions, authentication, CSRF, central authorization | Done | `55a8b00` |
 | 3 | Case workspace (case API + first real web UI) | Done | `b5d6b4f` |
-| 4 | Evidence ingestion and source register | Done | see `git log` |
-| 5 | Secure web-page capture connector | **Next** | — |
-| 6 | Audit interfaces | Pending | — |
+| 4 | Evidence ingestion and source register | Done | `e87e1d6` |
+| 5 | Secure web-page capture connector | Done | see `git log` |
+| 6 | Audit interfaces | **Next** | — |
 | 7 | Automated testing and CI | Pending | — |
 | 8 | Documentation and release gate | Pending | — |
 
-Each phase landed as one commit on a building, tested tree. Phase 5 starts at
-plan §7 "Phase 5" with the connector requirements in §3 "Web-page capture"
-(SSRF address classification for IPv4/IPv6, redirect revalidation, streaming
-limits, no page JavaScript) and the job API in §5.
+Each phase landed as one commit on a building, tested tree. Phase 6 starts at
+plan §7 "Phase 6": the audit *write* side is already done (every milestone
+mutation, download, job execution, retry, and failure writes an allowlisted
+`AuditEvent` in its transaction); what remains is the read side —
+`GET /v1/cases/:caseId/audit-events` (action `audit.read`, cursor pagination)
+and the audit timeline UI — plus retention documentation and a test that no
+API path can mutate audit rows.
 
 **After Phase 8** (decided 2026-06-10): the next planning artifact is a
 dedicated design milestone — formalize the CSS visual language into a
@@ -39,7 +42,7 @@ post-slice surfaces (entity graph, timeline, map, notebook) — before any
 further feature code. No formal visual design exists today; the de facto
 design system is `apps/web/app/styles.css` plus the UX rules in
 `docs/architecture/ui-architecture.md`. Do not insert design work into
-phases 5–8; the remaining milestone UI (jobs table, audit timeline)
+phases 5–8; the remaining milestone UI (audit timeline)
 composes from the existing visual vocabulary.
 
 ## Running it
@@ -56,11 +59,15 @@ Sign in at `http://localhost:3000/login` with the `SEED_OWNER_EMAIL` /
 `SEED_OWNER_PASSWORD` values from `.env`. API readiness:
 `GET :4000/health/ready` (checks postgres, redis, object storage).
 
-Tests: `npm test -w @evidara/api` — 118 vitest tests (unit + integration).
-Integration tests talk to the real test MinIO bucket
+Tests: `npm test` — 205 vitest tests total: 132 in `@evidara/api`
+(unit + integration) and 73 in `@evidara/connectors-sdk` (SSRF address
+classification, capture behavior against local fixture HTTP servers, text
+extraction). API integration tests talk to the real test MinIO bucket
 (`evidara-evidence-test`, created automatically by the global setup) and
 `.env.test` pins `UPLOAD_MAX_BYTES=1024` so the size-limit test stays fast —
-keep test upload fixtures under 1 KiB.
+keep test upload fixtures under 1 KiB. The global setup also obliterates the
+test Redis queue (`connector-jobs`, db 1) because API tests enqueue real
+entries that no worker drains.
 Integration tests auto-create an `evidara_test` database and apply migrations;
 the global setup refuses any database whose name does not end in `_test`.
 A `pretest` hook rebuilds workspace packages first — do not remove it; the API
@@ -127,6 +134,41 @@ not accidentally.
     presigned MinIO GET (forced `attachment` disposition), and write an
     `evidence.downloaded` audit event. Object keys and buckets never appear
     in any API response.
+14. **The `web-page-capture` connector lives in `packages/connectors-sdk`**,
+    not in the worker: the API needs its manifest (for `GET /v1/connectors`
+    and input validation) and the worker needs its execution, and `apps/*`
+    cannot import from `workers/*`. The SDK exports the manifest registry,
+    the SSRF URL/address policy, and `captureWebPage`; the worker composes
+    them in `workers/connectors/src/execute.ts`. Revisit the layout if the
+    connector count grows.
+15. **SSRF enforcement is layered.** The API rejects only what is statically
+    checkable at submission (scheme, embedded credentials, blocked literal
+    IPs — `INVALID_TARGET`). The worker is authoritative: it re-normalizes,
+    resolves DNS, classifies every IPv4/IPv6 address (loopback, private,
+    link-local, CGNAT, multicast, reserved, metadata, NAT64/6to4/Teredo,
+    fail-closed on unparseable), pins connections to the validated addresses
+    (DNS-rebinding defense), and repeats all of it on every redirect hop.
+    `CAPTURE_FIXTURE_ALLOWLIST` (exact `host:port` entries) exempts local
+    test fixture servers from address classification only — it is forced
+    empty in production builds.
+16. **No automatic retries.** BullMQ runs each queue entry once
+    (`attempts: 1`); retry is the explicit
+    `POST .../connector-jobs/:jobId/retry` endpoint, allowed only when the
+    job is FAILED, the last `ConnectorAttempt` is classified retryable
+    (TIMEOUT, DNS_FAILURE, CONNECTION_FAILED, 5xx/429, ENQUEUE_FAILED), and
+    `attemptCount < 5`. `nextRetryAt` exists in the schema but is unused
+    until automatic retries are wanted.
+17. **Capture evidence records.** The worker ingests through the same
+    temp-key → promote → transaction pattern as uploads (including an
+    `Upload` cleanup row and blob dedup). Evidence idempotency key is
+    `connector-job:<jobId>`, so a re-executed job can never duplicate
+    evidence. Captures inherit the case handling level. Raw HTML is the
+    evidence blob; extracted readable text is stored in
+    `rawMetadata.extractedText` capped at 100 k chars (flagged when
+    truncated). Provenance records requested/final/canonical URLs, redirect
+    chain, HTTP status, user agent, fetch time, duration, hash, and
+    connector version. Response headers are stored after dropping
+    `set-cookie`.
 
 ## Environment and tooling gotchas
 
@@ -152,31 +194,43 @@ not accidentally.
 - Node ≥ 22 required; env files load in-process via `process.loadEnvFile`
   (real environment variables always win; `NODE_ENV=test` switches to
   `.env.test`, which is committed and must never hold real secrets).
+- **BullMQ custom job ids cannot contain `:`** — the producer uses
+  `<jobId>-attempt-<n>`. Retries need a distinct queue job id or BullMQ
+  silently deduplicates them.
+- **undici v7 removed `maxRedirections`** from `request()` options; it never
+  follows redirects, which is exactly what the capture loop relies on.
+- `npm audit` currently reports two moderate advisories in Next.js's
+  `postcss` chain (pre-existing, unrelated to Phase 5); deal with it in
+  Phase 7 when CI adds dependency auditing.
 
 ## Local dev database state (cosmetic)
 
 Verification left behind: a case named "My conflicting rename" (id in audit
 history), users `viewer@evidara.local` (password = seed owner's), two
-"Manual check case" rows, and a "Phase 4 verification case" holding one
-uploaded text file, one manual evidence item, and a FAILED upload row from
-the rejected-type check. Deleting cases via SQL is blocked by the append-only
-`AuditEvent` restrict FK — by design. A consented `npm run db:reset` clears
-everything (MinIO objects under `evidence/` survive a database reset; wipe
-the bucket too if you want a truly clean slate).
+"Manual check case" rows, a "Phase 4 verification case" holding one uploaded
+text file, one manual evidence item, and a FAILED upload row from the
+rejected-type check, and a "Phase 5 verification case" holding one
+`example.com` web capture plus two FAILED connector jobs (a BLOCKED_TARGET
+and a twice-attempted DNS_FAILURE). Deleting cases via SQL is blocked by the
+append-only `AuditEvent` restrict FK — by design. A consented
+`npm run db:reset` clears everything (MinIO objects under `evidence/`
+survive a database reset; wipe the bucket too if you want a truly clean
+slate).
 
-## Phase 5 pointers (next work)
+## Phase 6 pointers (next work)
 
-Read plan §3 "Web-page capture", §5 connector endpoints, §7 Phase 5
-deliverables/acceptance. The connector worker lives in `workers/connectors`
-(currently fails closed with no adapters registered); the connector SDK
-package is `packages/connectors-sdk`. Plan §4 still lists `ConnectorAttempt`
-and `ConnectorJob` amendments — those were deliberately deferred from the
-Phase 4 migration to keep it scoped; Phase 5 owns them. Captured pages should
-land as evidence through the same blob-promotion path
-(`apps/api/src/modules/evidence/service.ts` — `ingestFileEvidence` shows the
-temp-key/promote/transaction pattern; the worker will need an equivalent that
-runs outside an HTTP request). The storage adapter is
-`apps/api/src/lib/object-storage.ts` (`forcePathStyle: true` matters).
+Read plan §3 "Auditability" and §7 Phase 6. Audit *writes* are complete and
+allowlisted (see decisions above; action names so far: `case.created`,
+`case.updated`, `evidence.created`, `evidence.updated`,
+`evidence.downloaded`, `connector_job.queued`, `connector_job.retried`,
+`connector_job.succeeded`, `connector_job.failed`). Remaining: the
+`GET /v1/cases/:caseId/audit-events` endpoint (action `audit.read` — already
+in the policy matrix: case OWNER/REVIEWER plus org OWNER/ADMIN oversight),
+cursor pagination over `(caseId, createdAt)` (index exists), the audit
+timeline UI at `/cases/[caseId]/audit` (placeholder page exists), login/
+logout/denial audit coverage review, and a test proving no API path mutates
+`AuditEvent` rows. Follow the list/cursor pattern in
+`apps/api/src/modules/connectors/service.ts`.
 
 ## Conventions observed so far
 

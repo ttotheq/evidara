@@ -8,10 +8,13 @@ from the same Zod schemas used for runtime validation and served at
 This document describes the full target surface. The subset implemented by the
 [first usable vertical slice](../plans/first-usable-vertical-slice.md) so far:
 authentication (`/auth/login`, `/auth/logout`, `/auth/csrf`, `/me`), cases
-(`GET/POST /cases`, `GET/PATCH /cases/:caseId`), and evidence
+(`GET/POST /cases`, `GET/PATCH /cases/:caseId`), evidence
 (`POST /cases/:caseId/evidence/files`, `POST /cases/:caseId/evidence/manual`,
 `GET /cases/:caseId/evidence`, `GET/PATCH /cases/:caseId/evidence/:evidenceId`,
-`GET /cases/:caseId/evidence/:evidenceId/download`). Where this document and
+`GET /cases/:caseId/evidence/:evidenceId/download`), and connectors
+(`GET /connectors`, `GET/POST /cases/:caseId/connector-jobs`,
+`GET /cases/:caseId/connector-jobs/:jobId`,
+`POST /cases/:caseId/connector-jobs/:jobId/retry`). Where this document and
 the delivery plan disagree, the delivery plan wins.
 
 ## Identity and organizations

@@ -138,6 +138,7 @@ model User {
   auditEvents     AuditEvent[]        @relation("AuditActor")
   evidence        EvidenceItem[]      @relation("EvidenceCreator")
   uploads         Upload[]            @relation("UploadActor")
+  connectorJobs   ConnectorJob[]      @relation("ConnectorJobRequester")
   sessions        Session[]
 }
 
@@ -274,6 +275,7 @@ model EvidenceItem {
   entitySources  EntitySource[]
   relationSources RelationSource[]
   citations      Citation[]
+  resultOfJobs   ConnectorJob[]   @relation("JobResultEvidence")
 
   @@unique([caseId, idempotencyKey])
   @@index([caseId, status, collectedAt])
@@ -310,6 +312,7 @@ model ConnectorJob {
   connectorKey     String
   connectorVersion String
   input            Json
+  targetSummary    String?
   status           JobStatus   @default(QUEUED)
   idempotencyKey   String
   attemptCount     Int         @default(0)
@@ -320,10 +323,32 @@ model ConnectorJob {
   queuedAt         DateTime    @default(now())
   startedAt        DateTime?
   completedAt      DateTime?
+  cancelledAt      DateTime?
+  nextRetryAt      DateTime?
+  resultEvidenceId String?     @db.Uuid
   case             Case        @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  requestedBy      User        @relation("ConnectorJobRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  resultEvidence   EvidenceItem? @relation("JobResultEvidence", fields: [resultEvidenceId], references: [id], onDelete: SetNull)
+  attempts         ConnectorAttempt[]
 
   @@unique([caseId, idempotencyKey])
   @@index([status, queuedAt])
+  @@index([caseId, queuedAt])
+}
+
+model ConnectorAttempt {
+  id            String    @id @default(uuid()) @db.Uuid
+  jobId         String    @db.Uuid
+  attemptNumber Int
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  succeeded     Boolean?
+  retryable     Boolean   @default(false)
+  errorCode     String?
+  errorMessage  String?
+  job           ConnectorJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, attemptNumber])
 }
 
 model Entity {

@@ -111,12 +111,6 @@ export const evidenceDownloadSchema = z.object({
   filename: z.string(),
 });
 
-export const queueConnectorJobSchema = z.object({
-  connectorKey: z.string().regex(/^[a-z0-9][a-z0-9-]{1,63}$/),
-  target: z.record(z.unknown()),
-  analystNotes: z.string().max(5000).optional(),
-});
-
 export type EvidenceStatus = z.infer<typeof evidenceStatusSchema>;
 export type EvidenceKind = z.infer<typeof evidenceKindSchema>;
 export type CollectionCompleteness = z.infer<
@@ -134,4 +128,3 @@ export type EvidenceBlobView = z.infer<typeof evidenceBlobSchema>;
 export type EvidenceItemView = z.infer<typeof evidenceItemSchema>;
 export type EvidenceListResponse = z.infer<typeof evidenceListResponseSchema>;
 export type EvidenceDownload = z.infer<typeof evidenceDownloadSchema>;
-export type QueueConnectorJobInput = z.infer<typeof queueConnectorJobSchema>;
