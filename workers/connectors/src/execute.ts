@@ -6,6 +6,7 @@ import {
   webPageCaptureInputSchema,
   type WebPageCapture,
 } from "@evidara/connectors-sdk";
+import type { AuditAction } from "@evidara/contracts";
 import { database, Prisma } from "@evidara/database";
 import { config } from "./config.js";
 import {
@@ -225,7 +226,7 @@ async function ingestCapture(
           organizationId: job.case.organizationId,
           caseId: job.caseId,
           actorId: job.requestedById,
-          action: "evidence.created",
+          action: "evidence.created" satisfies AuditAction,
           resourceType: "evidence",
           resourceId: item.id,
           outcome: "success",
@@ -245,7 +246,7 @@ async function ingestCapture(
           organizationId: job.case.organizationId,
           caseId: job.caseId,
           actorId: job.requestedById,
-          action: "connector_job.succeeded",
+          action: "connector_job.succeeded" satisfies AuditAction,
           resourceType: "connector_job",
           resourceId: job.id,
           outcome: "success",
@@ -314,7 +315,7 @@ async function failJob(
         organizationId: job.case.organizationId,
         caseId: job.caseId,
         actorId: job.requestedById,
-        action: "connector_job.failed",
+        action: "connector_job.failed" satisfies AuditAction,
         resourceType: "connector_job",
         resourceId: job.id,
         outcome: "failure",

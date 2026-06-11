@@ -5,6 +5,7 @@ import {
 import type { FastifyReply } from "fastify";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
+import { auditContextFrom } from "../../lib/audit.js";
 import { requireAuthContext } from "../../plugins/authentication.js";
 import {
   getConnectorJob,
@@ -56,7 +57,7 @@ export const registerConnectorRoutes: FastifyPluginAsyncZod = async (app) => {
         request.params.caseId,
         request.body,
         request.headers["idempotency-key"],
-        request.id,
+        auditContextFrom(request),
       );
       switch (result.outcome) {
         case "not_found":
@@ -99,6 +100,7 @@ export const registerConnectorRoutes: FastifyPluginAsyncZod = async (app) => {
         authContext,
         request.params.caseId,
         request.query,
+        auditContextFrom(request),
       );
       switch (result.outcome) {
         case "not_found":
@@ -130,6 +132,7 @@ export const registerConnectorRoutes: FastifyPluginAsyncZod = async (app) => {
         authContext,
         request.params.caseId,
         request.params.jobId,
+        auditContextFrom(request),
       );
       switch (result.outcome) {
         case "not_found":
@@ -154,7 +157,7 @@ export const registerConnectorRoutes: FastifyPluginAsyncZod = async (app) => {
         authContext,
         request.params.caseId,
         request.params.jobId,
-        request.id,
+        auditContextFrom(request),
       );
       switch (result.outcome) {
         case "not_found":

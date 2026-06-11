@@ -2,7 +2,7 @@
 
 Date: 2026-06-10
 Branch: `master` (note: tooling expects `main` as the eventual PR target; not yet reconciled)
-Last commit at handoff: Phase 5 secure web capture (see `git log`)
+Last commit at handoff: Phase 6 audit interfaces (see `git log`)
 
 ## What this project is
 
@@ -14,7 +14,7 @@ eight-phase plan covering auth, cases, evidence ingestion, secure web capture,
 audit, tests, and CI. **Where any other document disagrees with that plan, the
 plan wins.**
 
-## Milestone status: 5 of 8 phases complete
+## Milestone status: 6 of 8 phases complete
 
 | Phase | Scope | Status | Commit |
 | --- | --- | --- | --- |
@@ -22,18 +22,14 @@ plan wins.**
 | 2 | Sessions, authentication, CSRF, central authorization | Done | `55a8b00` |
 | 3 | Case workspace (case API + first real web UI) | Done | `b5d6b4f` |
 | 4 | Evidence ingestion and source register | Done | `e87e1d6` |
-| 5 | Secure web-page capture connector | Done | see `git log` |
-| 6 | Audit interfaces | **Next** | — |
-| 7 | Automated testing and CI | Pending | — |
+| 5 | Secure web-page capture connector | Done | `f66f8e8` |
+| 6 | Audit interfaces | Done | see `git log` |
+| 7 | Automated testing and CI | **Next** | — |
 | 8 | Documentation and release gate | Pending | — |
 
-Each phase landed as one commit on a building, tested tree. Phase 6 starts at
-plan §7 "Phase 6": the audit *write* side is already done (every milestone
-mutation, download, job execution, retry, and failure writes an allowlisted
-`AuditEvent` in its transaction); what remains is the read side —
-`GET /v1/cases/:caseId/audit-events` (action `audit.read`, cursor pagination)
-and the audit timeline UI — plus retention documentation and a test that no
-API path can mutate audit rows.
+Each phase landed as one commit on a building, tested tree. Phase 7 starts at
+plan §7 "Phase 7" (automated testing and CI) with the test strategy in §8 and
+the pipeline shape in §9.
 
 **After Phase 8** (decided 2026-06-10): the next planning artifact is a
 dedicated design milestone — formalize the CSS visual language into a
@@ -59,7 +55,7 @@ Sign in at `http://localhost:3000/login` with the `SEED_OWNER_EMAIL` /
 `SEED_OWNER_PASSWORD` values from `.env`. API readiness:
 `GET :4000/health/ready` (checks postgres, redis, object storage).
 
-Tests: `npm test` — 205 vitest tests total: 132 in `@evidara/api`
+Tests: `npm test` — 215 vitest tests total: 142 in `@evidara/api`
 (unit + integration) and 73 in `@evidara/connectors-sdk` (SSRF address
 classification, capture behavior against local fixture HTTP servers, text
 extraction). API integration tests talk to the real test MinIO bucket
@@ -169,6 +165,27 @@ not accidentally.
     chain, HTTP status, user agent, fetch time, duration, hash, and
     connector version. Response headers are stored after dropping
     `set-cookie`.
+18. **Central audit service.** All API audit writes go through
+    `recordAuditEvent` in `apps/api/src/lib/audit.ts`: action names are
+    validated against the registry in `@evidara/contracts` (`AUDIT_ACTIONS`),
+    metadata is shape-validated, and every event stores `requestId` plus an
+    HMAC-keyed `ipHash` (never exposed in responses). Service functions take
+    an `AuditContext` (`auditContextFrom(request)`) instead of a bare request
+    id. The worker writes audit rows directly (it cannot import API code)
+    with actions typed `satisfies AuditAction`.
+19. **Denials and authentication are audited.** Every case-scoped 403 writes
+    `authorization.denied` with `metadata.attemptedAction` (actor = the
+    denied user). Login success/failure (known users only — unknown emails
+    have no organization anchor) and logout write `auth.login`/`auth.logout`
+    per organization membership. Cross-tenant 404 probes are deliberately
+    not audited (the prober is not a member of the target organization).
+20. **Audit reads.** `GET /v1/cases/:caseId/audit-events` requires
+    `audit.read` (case OWNER and REVIEWER, plus org OWNER/ADMIN oversight on
+    non-RESTRICTED cases; ANALYST and VIEWER are denied). Append-only is
+    pinned by tests (no mutation route exists); a database trigger or
+    restricted role is still required before production — documented with
+    the metadata allowlist and retention policy in
+    `docs/architecture/system-architecture.md` §6 "Audit trail".
 
 ## Environment and tooling gotchas
 
@@ -217,20 +234,24 @@ append-only `AuditEvent` restrict FK — by design. A consented
 survive a database reset; wipe the bucket too if you want a truly clean
 slate).
 
-## Phase 6 pointers (next work)
+## Phase 7 pointers (next work)
 
-Read plan §3 "Auditability" and §7 Phase 6. Audit *writes* are complete and
-allowlisted (see decisions above; action names so far: `case.created`,
-`case.updated`, `evidence.created`, `evidence.updated`,
-`evidence.downloaded`, `connector_job.queued`, `connector_job.retried`,
-`connector_job.succeeded`, `connector_job.failed`). Remaining: the
-`GET /v1/cases/:caseId/audit-events` endpoint (action `audit.read` — already
-in the policy matrix: case OWNER/REVIEWER plus org OWNER/ADMIN oversight),
-cursor pagination over `(caseId, createdAt)` (index exists), the audit
-timeline UI at `/cases/[caseId]/audit` (placeholder page exists), login/
-logout/denial audit coverage review, and a test proving no API path mutates
-`AuditEvent` rows. Follow the list/cursor pattern in
-`apps/api/src/modules/connectors/service.ts`.
+Read plan §7 "Phase 7", §8 test strategy, §9 CI pipeline. Existing coverage:
+215 vitest tests (policy matrix, sessions/CSRF, evidence ingestion incl.
+deny paths, SSRF/capture behavior against local fixtures, connector job API,
+audit interfaces incl. append-only). Remaining for Phase 7: worker
+integration tests (execute a real `web-page-capture` job against a local
+fixture server with `CAPTURE_FIXTURE_ALLOWLIST` — see
+`workers/connectors/src/execute.ts`; needs DB/Redis/MinIO like the API
+tests), a browser end-to-end test (plan §8 lists the ten steps; use
+`CAPTURE_FIXTURE_ALLOWLIST=localhost:<port>` so the capture stays off the
+public internet — hostname targets pass the API's static checks and the
+worker honors the allowlist; never assert on bare `[role=alert]`), and the
+GitHub Actions workflow (§9 jobs: quality, unit, integration, e2e,
+build-security; service containers for postgres/redis/minio; migrations
+from an empty database, not `db push`). Also resolve the two moderate
+`npm audit` advisories in Next.js's postcss chain (likely a Next.js patch
+bump) when adding the dependency-audit job.
 
 ## Conventions observed so far
 

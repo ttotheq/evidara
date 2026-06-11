@@ -5,6 +5,7 @@ import {
 } from "@evidara/contracts";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
+import { auditContextFrom } from "../../lib/audit.js";
 import { requireAuthContext } from "../../plugins/authentication.js";
 import {
   createCase,
@@ -47,7 +48,7 @@ export const registerCaseRoutes: FastifyPluginAsyncZod = async (app) => {
         authContext,
         request.body,
         request.headers["idempotency-key"],
-        request.id,
+        auditContextFrom(request),
       );
 
       if (result.outcome === "forbidden") {
@@ -98,7 +99,7 @@ export const registerCaseRoutes: FastifyPluginAsyncZod = async (app) => {
         request.params.caseId,
         request.body,
         request.headers["if-match"],
-        request.id,
+        auditContextFrom(request),
       );
 
       switch (result.outcome) {

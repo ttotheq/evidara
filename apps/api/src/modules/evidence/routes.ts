@@ -10,6 +10,7 @@ import type { FastifyReply } from "fastify";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { config } from "../../config.js";
+import { auditContextFrom } from "../../lib/audit.js";
 import { requireAuthContext } from "../../plugins/authentication.js";
 import {
   authorizeEvidenceCreate,
@@ -69,6 +70,7 @@ export const registerEvidenceRoutes: FastifyPluginAsyncZod = async (app) => {
         authContext,
         request.params.caseId,
         request.query,
+        auditContextFrom(request),
       );
       switch (result.outcome) {
         case "not_found":
@@ -107,7 +109,7 @@ export const registerEvidenceRoutes: FastifyPluginAsyncZod = async (app) => {
         request.params.caseId,
         request.body,
         request.headers["idempotency-key"],
-        request.id,
+        auditContextFrom(request),
       );
       switch (result.outcome) {
         case "not_found":
@@ -148,7 +150,11 @@ export const registerEvidenceRoutes: FastifyPluginAsyncZod = async (app) => {
       }
 
       // Permissions and idempotency are settled before any bytes are read.
-      const access = await authorizeEvidenceCreate(authContext, caseId);
+      const access = await authorizeEvidenceCreate(
+        authContext,
+        caseId,
+        auditContextFrom(request),
+      );
       if (access.outcome === "not_found") return sendNotFound(reply);
       if (access.outcome === "forbidden") {
         return sendForbidden(
@@ -207,7 +213,7 @@ export const registerEvidenceRoutes: FastifyPluginAsyncZod = async (app) => {
             metadata: metadata.data,
           },
           idempotencyKey,
-          request.id,
+          auditContextFrom(request),
         );
 
         switch (result.outcome) {
@@ -264,6 +270,7 @@ export const registerEvidenceRoutes: FastifyPluginAsyncZod = async (app) => {
         authContext,
         request.params.caseId,
         request.params.evidenceId,
+        auditContextFrom(request),
       );
       switch (result.outcome) {
         case "not_found":
@@ -298,7 +305,7 @@ export const registerEvidenceRoutes: FastifyPluginAsyncZod = async (app) => {
         request.params.evidenceId,
         request.body,
         request.headers["if-match"],
-        request.id,
+        auditContextFrom(request),
       );
       switch (result.outcome) {
         case "not_found":
@@ -332,7 +339,7 @@ export const registerEvidenceRoutes: FastifyPluginAsyncZod = async (app) => {
         authContext,
         request.params.caseId,
         request.params.evidenceId,
-        request.id,
+        auditContextFrom(request),
       );
       switch (result.outcome) {
         case "not_found":

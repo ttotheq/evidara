@@ -15,6 +15,7 @@ import {
 import { createSchema, createYoga } from "graphql-yoga";
 import { config } from "./config.js";
 import { closeConnectorQueue } from "./lib/connector-queue.js";
+import { registerAuditRoutes } from "./modules/audit/routes.js";
 import { registerAuthRoutes } from "./modules/auth/routes.js";
 import { registerCaseRoutes } from "./modules/cases/routes.js";
 import { registerConnectorRoutes } from "./modules/connectors/routes.js";
@@ -100,6 +101,7 @@ export async function buildApp() {
   await app.register(registerCaseRoutes, { prefix: "/v1" });
   await app.register(registerEvidenceRoutes, { prefix: "/v1" });
   await app.register(registerConnectorRoutes, { prefix: "/v1" });
+  await app.register(registerAuditRoutes, { prefix: "/v1" });
 
   // The queue connection is a lazy singleton; it reopens if another app
   // instance enqueues after this one closes (relevant only in tests).

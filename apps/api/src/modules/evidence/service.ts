@@ -12,6 +12,11 @@ import { database, Prisma } from "@evidara/database";
 import { canInCase } from "../../authorization/policy.js";
 import { config } from "../../config.js";
 import {
+  recordAuditEvent,
+  recordAuthorizationDenied,
+  type AuditContext,
+} from "../../lib/audit.js";
+import {
   copyObject,
   deleteObjectQuietly,
   presignDownload,
@@ -111,6 +116,7 @@ async function authorizeCaseAction(
   authContext: AuthContext,
   caseId: string,
   action: "evidence.read" | "evidence.create" | "evidence.update" | "evidence.download",
+  auditContext: AuditContext,
 ): Promise<{ outcome: "ok"; context: CaseContext } | AccessDenied> {
   const context = await loadCaseContext(authContext, caseId);
   // Unreadable cases return not_found to prevent case-ID enumeration.
@@ -118,6 +124,14 @@ async function authorizeCaseAction(
     return { outcome: "not_found" };
   }
   if (!canInCase(context.policyContext, action)) {
+    await recordAuthorizationDenied({
+      organizationId: context.found.organizationId,
+      caseId,
+      actorId: authContext.user.id,
+      attemptedAction: action,
+      resourceType: "evidence",
+      context: auditContext,
+    });
     return { outcome: "forbidden" };
   }
   return { outcome: "ok", context };
@@ -127,12 +141,18 @@ export async function listEvidence(
   authContext: AuthContext,
   caseId: string,
   query: ListEvidenceQuery,
+  auditContext: AuditContext,
 ): Promise<
   | { outcome: "ok"; data: EvidenceItemView[]; nextCursor?: string }
   | { outcome: "invalid_cursor" }
   | AccessDenied
 > {
-  const access = await authorizeCaseAction(authContext, caseId, "evidence.read");
+  const access = await authorizeCaseAction(
+    authContext,
+    caseId,
+    "evidence.read",
+    auditContext,
+  );
   if (access.outcome !== "ok") return access;
 
   const where: Prisma.EvidenceItemWhereInput = { caseId };
@@ -186,8 +206,14 @@ export async function getEvidence(
   authContext: AuthContext,
   caseId: string,
   evidenceId: string,
+  auditContext: AuditContext,
 ): Promise<{ outcome: "ok"; evidence: EvidenceItemView } | AccessDenied> {
-  const access = await authorizeCaseAction(authContext, caseId, "evidence.read");
+  const access = await authorizeCaseAction(
+    authContext,
+    caseId,
+    "evidence.read",
+    auditContext,
+  );
   if (access.outcome !== "ok") return access;
 
   const item = await database.evidenceItem.findUnique({
@@ -211,7 +237,7 @@ export async function createManualEvidence(
   caseId: string,
   input: CreateManualEvidenceInput,
   idempotencyKey: string,
-  requestId: string,
+  auditContext: AuditContext,
 ): Promise<
   | { outcome: "created" | "exists"; evidence: EvidenceItemView }
   | AccessDenied
@@ -220,6 +246,7 @@ export async function createManualEvidence(
     authContext,
     caseId,
     "evidence.create",
+    auditContext,
   );
   if (access.outcome !== "ok") return access;
 
@@ -253,18 +280,16 @@ export async function createManualEvidence(
         include: evidenceInclude,
       });
 
-      await tx.auditEvent.create({
-        data: {
-          organizationId: access.context.found.organizationId,
-          caseId,
-          actorId: authContext.user.id,
-          action: "evidence.created",
-          resourceType: "evidence",
-          resourceId: item.id,
-          outcome: "success",
-          requestId,
-          metadata: { kind: "MANUAL", idempotencyKey },
-        },
+      await recordAuditEvent(tx, {
+        organizationId: access.context.found.organizationId,
+        caseId,
+        actorId: authContext.user.id,
+        action: "evidence.created",
+        resourceType: "evidence",
+        resourceId: item.id,
+        outcome: "success",
+        metadata: { kind: "MANUAL", idempotencyKey },
+        context: auditContext,
       });
 
       return item;
@@ -335,7 +360,7 @@ export async function ingestFileEvidence(
   context: CaseContext,
   input: IngestFileInput,
   idempotencyKey: string,
-  requestId: string,
+  auditContext: AuditContext,
 ): Promise<IngestFileResult> {
   const caseId = context.found.id;
   const uploadId = randomUUID();
@@ -487,24 +512,22 @@ export async function ingestFileEvidence(
         },
       });
 
-      await tx.auditEvent.create({
-        data: {
-          organizationId: context.found.organizationId,
-          caseId,
-          actorId: authContext.user.id,
-          action: "evidence.created",
-          resourceType: "evidence",
-          resourceId: item.id,
-          outcome: "success",
-          requestId,
-          metadata: {
-            kind: "FILE",
-            idempotencyKey,
-            sha256,
-            byteSize,
-            mediaType,
-          },
+      await recordAuditEvent(tx, {
+        organizationId: context.found.organizationId,
+        caseId,
+        actorId: authContext.user.id,
+        action: "evidence.created",
+        resourceType: "evidence",
+        resourceId: item.id,
+        outcome: "success",
+        metadata: {
+          kind: "FILE",
+          idempotencyKey,
+          sha256,
+          byteSize,
+          mediaType,
         },
+        context: auditContext,
       });
 
       // A concurrent identical upload may have created the blob first; the
@@ -540,8 +563,14 @@ export async function ingestFileEvidence(
 export async function authorizeEvidenceCreate(
   authContext: AuthContext,
   caseId: string,
+  auditContext: AuditContext,
 ): Promise<{ outcome: "ok"; context: CaseContext } | AccessDenied> {
-  return authorizeCaseAction(authContext, caseId, "evidence.create");
+  return authorizeCaseAction(
+    authContext,
+    caseId,
+    "evidence.create",
+    auditContext,
+  );
 }
 
 export async function findExistingByIdempotencyKey(
@@ -558,7 +587,7 @@ export async function updateEvidence(
   evidenceId: string,
   patch: UpdateEvidenceInput,
   expectedVersion: number,
-  requestId: string,
+  auditContext: AuditContext,
 ): Promise<
   | { outcome: "updated"; evidence: EvidenceItemView }
   | { outcome: "version_conflict"; currentVersion: number }
@@ -568,6 +597,7 @@ export async function updateEvidence(
     authContext,
     caseId,
     "evidence.update",
+    auditContext,
   );
   if (access.outcome !== "ok") return access;
 
@@ -590,18 +620,16 @@ export async function updateEvidence(
     });
     if (result.count === 0) return null;
 
-    await tx.auditEvent.create({
-      data: {
-        organizationId: access.context.found.organizationId,
-        caseId,
-        actorId: authContext.user.id,
-        action: "evidence.updated",
-        resourceType: "evidence",
-        resourceId: evidenceId,
-        outcome: "success",
-        requestId,
-        metadata: { changedFields: Object.keys(patch) },
-      },
+    await recordAuditEvent(tx, {
+      organizationId: access.context.found.organizationId,
+      caseId,
+      actorId: authContext.user.id,
+      action: "evidence.updated",
+      resourceType: "evidence",
+      resourceId: evidenceId,
+      outcome: "success",
+      metadata: { changedFields: Object.keys(patch) },
+      context: auditContext,
     });
 
     return tx.evidenceItem.findUnique({
@@ -627,7 +655,7 @@ export async function createEvidenceDownload(
   authContext: AuthContext,
   caseId: string,
   evidenceId: string,
-  requestId: string,
+  auditContext: AuditContext,
 ): Promise<
   | { outcome: "ok"; download: EvidenceDownload }
   | { outcome: "no_content" }
@@ -637,6 +665,7 @@ export async function createEvidenceDownload(
     authContext,
     caseId,
     "evidence.download",
+    auditContext,
   );
   if (access.outcome !== "ok") return access;
 
@@ -658,18 +687,16 @@ export async function createEvidenceDownload(
   });
 
   // Content-exposing access is always audited.
-  await database.auditEvent.create({
-    data: {
-      organizationId: access.context.found.organizationId,
-      caseId,
-      actorId: authContext.user.id,
-      action: "evidence.downloaded",
-      resourceType: "evidence",
-      resourceId: item.id,
-      outcome: "success",
-      requestId,
-      metadata: { sha256: item.blob.sha256, filename },
-    },
+  await recordAuditEvent(database, {
+    organizationId: access.context.found.organizationId,
+    caseId,
+    actorId: authContext.user.id,
+    action: "evidence.downloaded",
+    resourceType: "evidence",
+    resourceId: item.id,
+    outcome: "success",
+    metadata: { sha256: item.blob.sha256, filename },
+    context: auditContext,
   });
 
   return {

@@ -14,8 +14,9 @@ authentication (`/auth/login`, `/auth/logout`, `/auth/csrf`, `/me`), cases
 `GET /cases/:caseId/evidence/:evidenceId/download`), and connectors
 (`GET /connectors`, `GET/POST /cases/:caseId/connector-jobs`,
 `GET /cases/:caseId/connector-jobs/:jobId`,
-`POST /cases/:caseId/connector-jobs/:jobId/retry`). Where this document and
-the delivery plan disagree, the delivery plan wins.
+`POST /cases/:caseId/connector-jobs/:jobId/retry`), and audit
+(`GET /cases/:caseId/audit-events`). Where this document and the delivery
+plan disagree, the delivery plan wins.
 
 ## Identity and organizations
 

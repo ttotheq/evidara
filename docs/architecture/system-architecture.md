@@ -118,6 +118,37 @@ They do not read another module's tables directly from route handlers.
   approval.
 - Logs exclude evidence content, connector secrets, tokens, and personal data.
 
+### Audit trail
+
+- Every successful mutation, evidence download, and connector job outcome
+  writes an `AuditEvent` in the same database transaction as the change it
+  records. Sign-in, sign-out, and failed-credential attempts are audited per
+  organization membership; denied authorization attempts are recorded as
+  `authorization.denied` with the attempted action in metadata.
+- All writes go through one application service
+  (`apps/api/src/lib/audit.ts`), which validates the action name against the
+  shared registry in `@evidara/contracts` and validates metadata shape.
+- **Metadata allowlist.** Metadata holds scalar display values only: resource
+  kinds, idempotency keys, content hashes, byte counts, media types, target
+  URLs, error codes, changed-field names, attempt numbers, and denial
+  reasons. Secrets, session tokens, password material, cookies, evidence
+  content, raw connector payloads, and object-storage keys or credentials
+  never appear, and the API response never includes the IP hash.
+- **IP privacy.** Client addresses are stored only as an HMAC-SHA256 keyed by
+  `SESSION_SECRET` (the same scheme as session records), so raw IPs are
+  never persisted and cannot be brute-forced without the server secret.
+- **Append-only enforcement.** The application exposes read-only audit
+  access (`GET /v1/cases/:caseId/audit-events`, gated by `audit.read`); no
+  create/update/delete route exists, which is pinned by integration tests.
+  Database-level enforcement (a trigger or a restricted role without
+  UPDATE/DELETE on the table) is required before production deployment and
+  is not yet in place.
+- **Retention.** Audit events are retained for the life of their case and
+  organization; restrict foreign keys deliberately block deleting cases that
+  have history. This milestone defines no automatic expiry or archival.
+  Production deployments must set a retention window that satisfies their
+  legal and contractual obligations before launch.
+
 ## 7. Reliability and observability
 
 - All command endpoints accept an `Idempotency-Key`.

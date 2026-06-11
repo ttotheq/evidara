@@ -14,6 +14,11 @@ import {
 } from "@evidara/connectors-sdk";
 import { database, Prisma } from "@evidara/database";
 import { canInCase } from "../../authorization/policy.js";
+import {
+  recordAuditEvent,
+  recordAuthorizationDenied,
+  type AuditContext,
+} from "../../lib/audit.js";
 import { enqueueConnectorJob } from "../../lib/connector-queue.js";
 import type { AuthContext } from "../../plugins/authentication.js";
 import { loadCaseContext } from "../cases/service.js";
@@ -114,6 +119,7 @@ async function authorizeCaseAction(
   authContext: AuthContext,
   caseId: string,
   action: "connector.run" | "connector.retry" | "evidence.read",
+  auditContext: AuditContext,
 ): Promise<{ outcome: "ok"; context: CaseContext } | AccessDenied> {
   const context = await loadCaseContext(authContext, caseId);
   // Unreadable cases return not_found to prevent case-ID enumeration.
@@ -121,6 +127,14 @@ async function authorizeCaseAction(
     return { outcome: "not_found" };
   }
   if (!canInCase(context.policyContext, action)) {
+    await recordAuthorizationDenied({
+      organizationId: context.found.organizationId,
+      caseId,
+      actorId: authContext.user.id,
+      attemptedAction: action,
+      resourceType: "connector_job",
+      context: auditContext,
+    });
     return { outcome: "forbidden" };
   }
   return { outcome: "ok", context };
@@ -144,9 +158,14 @@ export async function queueConnectorJob(
   caseId: string,
   input: QueueConnectorJobInput,
   idempotencyKey: string,
-  requestId: string,
+  auditContext: AuditContext,
 ): Promise<QueueJobResult> {
-  const access = await authorizeCaseAction(authContext, caseId, "connector.run");
+  const access = await authorizeCaseAction(
+    authContext,
+    caseId,
+    "connector.run",
+    auditContext,
+  );
   if (access.outcome !== "ok") return access;
 
   const manifest = getConnectorManifest(input.connectorKey);
@@ -203,22 +222,20 @@ export async function queueConnectorJob(
         include: jobInclude,
       });
 
-      await tx.auditEvent.create({
-        data: {
-          organizationId: access.context.found.organizationId,
-          caseId,
-          actorId: authContext.user.id,
-          action: "connector_job.queued",
-          resourceType: "connector_job",
-          resourceId: job.id,
-          outcome: "success",
-          requestId,
-          metadata: {
-            connectorKey: manifest.key,
-            targetSummary,
-            idempotencyKey,
-          },
+      await recordAuditEvent(tx, {
+        organizationId: access.context.found.organizationId,
+        caseId,
+        actorId: authContext.user.id,
+        action: "connector_job.queued",
+        resourceType: "connector_job",
+        resourceId: job.id,
+        outcome: "success",
+        metadata: {
+          connectorKey: manifest.key,
+          targetSummary,
+          idempotencyKey,
         },
+        context: auditContext,
       });
 
       return job;
@@ -274,12 +291,18 @@ export async function listConnectorJobs(
   authContext: AuthContext,
   caseId: string,
   query: ListConnectorJobsQuery,
+  auditContext: AuditContext,
 ): Promise<
   | { outcome: "ok"; data: ConnectorJobView[]; nextCursor?: string }
   | { outcome: "invalid_cursor" }
   | AccessDenied
 > {
-  const access = await authorizeCaseAction(authContext, caseId, "evidence.read");
+  const access = await authorizeCaseAction(
+    authContext,
+    caseId,
+    "evidence.read",
+    auditContext,
+  );
   if (access.outcome !== "ok") return access;
 
   const where: Prisma.ConnectorJobWhereInput = { caseId };
@@ -325,8 +348,14 @@ export async function getConnectorJob(
   authContext: AuthContext,
   caseId: string,
   jobId: string,
+  auditContext: AuditContext,
 ): Promise<{ outcome: "ok"; job: ConnectorJobView } | AccessDenied> {
-  const access = await authorizeCaseAction(authContext, caseId, "evidence.read");
+  const access = await authorizeCaseAction(
+    authContext,
+    caseId,
+    "evidence.read",
+    auditContext,
+  );
   if (access.outcome !== "ok") return access;
 
   const job = await database.connectorJob.findUnique({
@@ -342,7 +371,7 @@ export async function retryConnectorJob(
   authContext: AuthContext,
   caseId: string,
   jobId: string,
-  requestId: string,
+  auditContext: AuditContext,
 ): Promise<
   | { outcome: "queued"; job: ConnectorJobView }
   | { outcome: "not_retryable" }
@@ -352,6 +381,7 @@ export async function retryConnectorJob(
     authContext,
     caseId,
     "connector.retry",
+    auditContext,
   );
   if (access.outcome !== "ok") return access;
 
@@ -381,18 +411,16 @@ export async function retryConnectorJob(
     });
     if (result.count === 0) return null;
 
-    await tx.auditEvent.create({
-      data: {
-        organizationId: access.context.found.organizationId,
-        caseId,
-        actorId: authContext.user.id,
-        action: "connector_job.retried",
-        resourceType: "connector_job",
-        resourceId: jobId,
-        outcome: "success",
-        requestId,
-        metadata: { connectorKey: job.connectorKey, attemptNumber: nextAttempt },
-      },
+    await recordAuditEvent(tx, {
+      organizationId: access.context.found.organizationId,
+      caseId,
+      actorId: authContext.user.id,
+      action: "connector_job.retried",
+      resourceType: "connector_job",
+      resourceId: jobId,
+      outcome: "success",
+      metadata: { connectorKey: job.connectorKey, attemptNumber: nextAttempt },
+      context: auditContext,
     });
 
     return tx.connectorJob.findUnique({

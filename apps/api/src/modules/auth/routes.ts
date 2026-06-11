@@ -9,6 +9,11 @@ import { database } from "@evidara/database";
 import type { FastifyPluginAsyncZod } from "fastify-type-provider-zod";
 import { config } from "../../config.js";
 import {
+  auditContextFrom,
+  recordAuditEvent,
+  type AuditContext,
+} from "../../lib/audit.js";
+import {
   DUMMY_PASSWORD_HASH_PROMISE,
   verifyPassword,
 } from "../../lib/passwords.js";
@@ -24,6 +29,34 @@ import {
   rotateCsrfToken,
 } from "./sessions.js";
 
+// Sign-in activity is audited per organization membership so organization
+// owners see their members' access events. Unknown email addresses have no
+// organization anchor and are visible only in server logs.
+async function recordAuthEvent(input: {
+  organizationIds: string[];
+  actorId: string;
+  action: "auth.login" | "auth.logout";
+  outcome: "success" | "failure";
+  reason?: string;
+  context: AuditContext;
+}): Promise<void> {
+  await Promise.all(
+    input.organizationIds.map((organizationId) =>
+      recordAuditEvent(database, {
+        organizationId,
+        actorId: input.actorId,
+        action: input.action,
+        resourceType: "session",
+        outcome: input.outcome,
+        metadata: input.reason ? { reason: input.reason } : {},
+        context: input.context,
+      }).catch(() => {
+        // Auth flow outcomes must not depend on audit storage.
+      }),
+    ),
+  );
+}
+
 export const registerAuthRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     "/auth/login",
@@ -37,13 +70,28 @@ export const registerAuthRoutes: FastifyPluginAsyncZod = async (app) => {
     async (request, reply) => {
       const { email, password } = request.body;
 
-      const user = await database.user.findUnique({ where: { email } });
+      const user = await database.user.findUnique({
+        where: { email },
+        include: { memberships: { select: { organizationId: true } } },
+      });
 
       const passwordHash =
         user?.passwordHash ?? (await DUMMY_PASSWORD_HASH_PROMISE);
       const passwordValid = await verifyPassword(passwordHash, password);
 
       if (!user || !user.passwordHash || !passwordValid || user.disabledAt) {
+        if (user) {
+          await recordAuthEvent({
+            organizationIds: user.memberships.map(
+              (membership) => membership.organizationId,
+            ),
+            actorId: user.id,
+            action: "auth.login",
+            outcome: "failure",
+            reason: user.disabledAt ? "account_disabled" : "invalid_credentials",
+            context: auditContextFrom(request),
+          });
+        }
         return reply.status(401).send({
           error: {
             code: "INVALID_CREDENTIALS",
@@ -64,6 +112,16 @@ export const registerAuthRoutes: FastifyPluginAsyncZod = async (app) => {
         sessionCookieOptions(session.expiresAt),
       );
 
+      await recordAuthEvent({
+        organizationIds: user.memberships.map(
+          (membership) => membership.organizationId,
+        ),
+        actorId: user.id,
+        action: "auth.login",
+        outcome: "success",
+        context: auditContextFrom(request),
+      });
+
       return {
         data: {
           user: {
@@ -80,6 +138,15 @@ export const registerAuthRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post("/auth/logout", async (request, reply) => {
     const authContext = requireAuthContext(request);
     await revokeSession(authContext.sessionId);
+    await recordAuthEvent({
+      organizationIds: authContext.memberships.map(
+        (membership) => membership.organizationId,
+      ),
+      actorId: authContext.user.id,
+      action: "auth.logout",
+      outcome: "success",
+      context: auditContextFrom(request),
+    });
     reply.clearCookie(SESSION_COOKIE_NAME, sessionCookieOptions());
     return reply.status(204).send();
   });

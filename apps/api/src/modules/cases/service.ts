@@ -11,6 +11,11 @@ import {
   type CaseAction,
 } from "../../authorization/policy.js";
 import {
+  recordAuditEvent,
+  recordAuthorizationDenied,
+  type AuditContext,
+} from "../../lib/audit.js";
+import {
   organizationRoleFor,
   type AuthContext,
 } from "../../plugins/authentication.js";
@@ -119,7 +124,7 @@ export async function createCase(
   authContext: AuthContext,
   input: CreateCaseRequest,
   idempotencyKey: string,
-  requestId: string,
+  auditContext: AuditContext,
 ): Promise<
   | { outcome: "created" | "exists"; case: unknown }
   | { outcome: "forbidden" }
@@ -129,6 +134,17 @@ export async function createCase(
     input.organizationId,
   );
   if (!canInOrganization({ organizationRole }, "case.create")) {
+    // Only members of the organization leave a denial trace; an arbitrary
+    // organization id from an outsider must not write into its audit log.
+    if (organizationRole) {
+      await recordAuthorizationDenied({
+        organizationId: input.organizationId,
+        actorId: authContext.user.id,
+        attemptedAction: "case.create",
+        resourceType: "case",
+        context: auditContext,
+      });
+    }
     return { outcome: "forbidden" };
   }
 
@@ -166,18 +182,16 @@ export async function createCase(
         },
       });
 
-      await tx.auditEvent.create({
-        data: {
-          organizationId: input.organizationId,
-          caseId: newCase.id,
-          actorId: authContext.user.id,
-          action: "case.created",
-          resourceType: "case",
-          resourceId: newCase.id,
-          outcome: "success",
-          requestId,
-          metadata: { idempotencyKey },
-        },
+      await recordAuditEvent(tx, {
+        organizationId: input.organizationId,
+        caseId: newCase.id,
+        actorId: authContext.user.id,
+        action: "case.created",
+        resourceType: "case",
+        resourceId: newCase.id,
+        outcome: "success",
+        metadata: { idempotencyKey },
+        context: auditContext,
       });
 
       return newCase;
@@ -247,7 +261,7 @@ export async function updateCase(
   caseId: string,
   patch: UpdateCaseInput,
   expectedVersion: number,
-  requestId: string,
+  auditContext: AuditContext,
 ): Promise<
   | { outcome: "updated"; case: unknown }
   | { outcome: "not_found" }
@@ -259,6 +273,15 @@ export async function updateCase(
     return { outcome: "not_found" };
   }
   if (!canInCase(context.policyContext, "case.update")) {
+    await recordAuthorizationDenied({
+      organizationId: context.found.organizationId,
+      caseId,
+      actorId: authContext.user.id,
+      attemptedAction: "case.update",
+      resourceType: "case",
+      resourceId: caseId,
+      context: auditContext,
+    });
     return { outcome: "forbidden" };
   }
   if (context.found.version !== expectedVersion) {
@@ -284,18 +307,16 @@ export async function updateCase(
     });
     if (result.count === 0) return null;
 
-    await tx.auditEvent.create({
-      data: {
-        organizationId: context.found.organizationId,
-        caseId,
-        actorId: authContext.user.id,
-        action: "case.updated",
-        resourceType: "case",
-        resourceId: caseId,
-        outcome: "success",
-        requestId,
-        metadata: { changedFields: Object.keys(patch) },
-      },
+    await recordAuditEvent(tx, {
+      organizationId: context.found.organizationId,
+      caseId,
+      actorId: authContext.user.id,
+      action: "case.updated",
+      resourceType: "case",
+      resourceId: caseId,
+      outcome: "success",
+      metadata: { changedFields: Object.keys(patch) },
+      context: auditContext,
     });
 
     return tx.case.findUnique({ where: { id: caseId } });
