@@ -4,11 +4,19 @@ next-env.d.ts
 dist
 coverage
 .turbo
-.env
-.env.local
+
+# Env files are ignored by default; allowlist the two that are
+# deliberately tracked (.env.test must never hold real secrets).
+.env*
+!.env.example
+!.env.test
+
+# Key material never belongs in the repo.
+*.pem
+*.key
+
 *.log
 *.tsbuildinfo
 .DS_Store
-data/
 test-results/
 playwright-report/
