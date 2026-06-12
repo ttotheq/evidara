@@ -39,7 +39,8 @@
       "linter": {
         "rules": {
           "a11y": {
-            "noNoninteractiveTabindex": "off"
+            "noNoninteractiveTabindex": "off",
+            "useSemanticElements": "off"
           }
         }
       }

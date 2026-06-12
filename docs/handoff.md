@@ -15,17 +15,30 @@ interaction design for the post-slice surfaces); the completed
 it. **Where any other document disagrees with the active plan, the plan
 wins.**
 
-## Design milestone status: 3 of 7 phases complete
+## Design milestone status: 5 of 7 phases complete
 
 | Phase | Scope | Status | Commit |
 | --- | --- | --- | --- |
 | 1 | Token foundation, dark + light themes, theme toggle | Done | `91a8f12` |
 | 2 | Component catalog + dev-only /design-system styleguide | Done | `19aea18` |
-| 3 | Synthetic demo dataset (typed fixtures, ontology-validated) | Done | see `git log` |
-| 4 | Entity graph interaction design + prototype | **Next** | — |
-| 5 | Timeline and map interaction design + prototypes | Pending | — |
-| 6 | Notebook interaction design + prototype | Pending | — |
+| 3 | Synthetic demo dataset (typed fixtures, ontology-validated) | Done | `16c74af` |
+| 4 | Entity graph interaction design + prototype | Done | `0453cb1` |
+| 5 | Timeline and map interaction design + prototypes | Done | see `git log` |
+| 6 | Notebook interaction design + prototype | **Next** | — |
 | 7 | Synthesis and next-milestone input | Pending | — |
+
+Interaction specs live in `docs/design/` (graph.md, timeline.md, map.md),
+each paired with a dev-only prototype route (`/prototypes/graph`,
+`/prototypes/timeline`, `/prototypes/map` — all 404 in production). Shared
+prototype conventions that Phase 6 should follow: the `?selected=` URL
+contract for cross-surface navigation, window-level Escape, equivalent
+table/list views as the non-visual alternative, count lines that disclose
+filtering, and the graph's category taxonomy (`prototypes/graph/taxonomy.ts`).
+The map spec's standout decision for the feature milestone: self-hosted
+vector tiles only — no hosted tile API keys (map.md §2, ties to the
+no-external-SaaS constraint and source-protection). A scoped `biome.json`
+override disables two a11y rules that false-positive on SVG composite
+widgets, prototypes only.
 
 Decisions resolved in plan §3: prototypes are dev-only routes in the real
 app; both themes ship with dark as default; the graph spec assumes SVG/DOM

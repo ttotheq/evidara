@@ -658,7 +658,6 @@ function GraphPrototype() {
                 const category = CATEGORY_OF[entity.type];
                 const selected = selectedId === entity.id;
                 return (
-                  // biome-ignore lint/a11y/useSemanticElements: HTML <button> cannot exist inside SVG; role="button" on a focusable <g> is the accessible SVG pattern
                   <g
                     key={entity.id}
                     id={`node-${entity.id}`}
