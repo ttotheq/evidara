@@ -1,8 +1,8 @@
 # Evidara Handoff
 
-Date: 2026-06-10
-Branch: `main` (renamed from `master` at the Phase 8 release gate; no remote configured yet)
-Last commit at handoff: Phase 8 documentation and release gate (see `git log`)
+Date: 2026-06-12
+Branch: `main` · Remote: https://github.com/ttotheq/evidara (public, AGPL-3.0)
+Last commit at handoff: see `git log`
 
 ## What this project is
 
@@ -340,20 +340,20 @@ slate).
 
 ## Next work
 
-Both milestones are closed. In order:
+Both milestones are closed, and the repo is published: public on GitHub
+under AGPL-3.0 (Ty's choices, 2026-06-12), with **all five CI jobs green
+from a clean clone** as of `1d3f68d` — the first run caught a real
+clean-clone build-ordering bug (apps built before packages; root `build`
+now runs `build:packages` first). In order:
 
-1. **Publish and confirm CI.** No git remote is configured; CI has never
-   executed on GitHub. On first push, confirm all five jobs pass from a
-   clean clone (the one release-gate acceptance criterion that cannot be
-   verified locally — every job's commands were run locally and pass).
-2. **Plan the next feature milestone.** The design milestone's
+1. **Plan the next feature milestone.** The design milestone's
    recommendation (docs/design/README.md): graph + minimal entity
    extraction first — it forces the entities/relations schema, ontology
    enforcement, and citation join into existence, and timeline/map then
    arrive as projections over the same model. Write the delivery plan the
    way the previous two were written; the data-requirements sections of
    graph.md/timeline.md/map.md/notebook.md are the schema/API inputs.
-3. **Carry-forward engineering debts** (recorded in README known
+2. **Carry-forward engineering debts** (recorded in README known
    limitations): audit append-only database enforcement, audit retention
    policy, connector rate-limit enforcement, outbox wiring, membership
    management, CI coverage reporting and secret scanning. Design debts
