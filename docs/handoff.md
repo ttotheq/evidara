@@ -15,7 +15,7 @@ interaction design for the post-slice surfaces); the completed
 it. **Where any other document disagrees with the active plan, the plan
 wins.**
 
-## Design milestone status: 5 of 7 phases complete
+## Design milestone status: complete (7 of 7 phases)
 
 | Phase | Scope | Status | Commit |
 | --- | --- | --- | --- |
@@ -23,22 +23,22 @@ wins.**
 | 2 | Component catalog + dev-only /design-system styleguide | Done | `19aea18` |
 | 3 | Synthetic demo dataset (typed fixtures, ontology-validated) | Done | `16c74af` |
 | 4 | Entity graph interaction design + prototype | Done | `0453cb1` |
-| 5 | Timeline and map interaction design + prototypes | Done | see `git log` |
-| 6 | Notebook interaction design + prototype | **Next** | — |
-| 7 | Synthesis and next-milestone input | Pending | — |
+| 5 | Timeline and map interaction design + prototypes | Done | `5b74acd` |
+| 6 | Notebook interaction design + prototype | Done | `9555ac0` |
+| 7 | Synthesis and next-milestone input | Done | see `git log` |
 
-Interaction specs live in `docs/design/` (graph.md, timeline.md, map.md),
-each paired with a dev-only prototype route (`/prototypes/graph`,
-`/prototypes/timeline`, `/prototypes/map` — all 404 in production). Shared
-prototype conventions that Phase 6 should follow: the `?selected=` URL
-contract for cross-surface navigation, window-level Escape, equivalent
-table/list views as the non-visual alternative, count lines that disclose
-filtering, and the graph's category taxonomy (`prototypes/graph/taxonomy.ts`).
-The map spec's standout decision for the feature milestone: self-hosted
-vector tiles only — no hosted tile API keys (map.md §2, ties to the
-no-external-SaaS constraint and source-protection). A scoped `biome.json`
-override disables two a11y rules that false-positive on SVG composite
-widgets, prototypes only.
+`docs/design/README.md` is the index: token/component rules for feature
+work, the shared surface conventions (the `?selected=` URL contract,
+window-level Escape, equivalent table/list views, count lines, one action
+to evidence), the decisions each feature milestone inherits (graph SVG
+threshold; the four-timestamp model; **self-hosted map tiles only**;
+ProseMirror for the notebook editor), and the build-order recommendation:
+**graph + minimal entity extraction first**, then timeline and map as
+projections over the same schema, then notebook with the editor adoption.
+Four interaction specs pair with dev-only prototype routes
+(`/prototypes/{graph,timeline,map,notebook}`, all 404 in production) on
+the demo dataset. A scoped `biome.json` override disables two a11y rules
+that false-positive on SVG composite widgets, prototypes only.
 
 Decisions resolved in plan §3: prototypes are dev-only routes in the real
 app; both themes ship with dark as default; the graph spec assumes SVG/DOM
@@ -340,20 +340,26 @@ slate).
 
 ## Next work
 
-The vertical-slice milestone is closed. In order:
+Both milestones are closed. In order:
 
 1. **Publish and confirm CI.** No git remote is configured; CI has never
    executed on GitHub. On first push, confirm all five jobs pass from a
    clean clone (the one release-gate acceptance criterion that cannot be
    verified locally — every job's commands were run locally and pass).
-2. **Design milestone** (decided 2026-06-10, see below): formalize the CSS
-   visual language into a documented token/component system and do
-   interaction design for the post-slice surfaces before any further
-   feature code.
+2. **Plan the next feature milestone.** The design milestone's
+   recommendation (docs/design/README.md): graph + minimal entity
+   extraction first — it forces the entities/relations schema, ontology
+   enforcement, and citation join into existence, and timeline/map then
+   arrive as projections over the same model. Write the delivery plan the
+   way the previous two were written; the data-requirements sections of
+   graph.md/timeline.md/map.md/notebook.md are the schema/API inputs.
 3. **Carry-forward engineering debts** (recorded in README known
    limitations): audit append-only database enforcement, audit retention
    policy, connector rate-limit enforcement, outbox wiring, membership
-   management, CI coverage reporting and secret scanning.
+   management, CI coverage reporting and secret scanning. Design debts
+   from tokens.md/components.md: spacing normalization and the
+   button/dl consolidation, queued for the first deliberate
+   visual-change pass.
 
 ## Conventions observed so far
 
