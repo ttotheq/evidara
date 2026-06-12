@@ -3,6 +3,10 @@
 Evidara is an open-source, evidence-centered OSINT investigation workspace.
 It preserves provenance from collection through analysis and reporting.
 
+Licensed under [AGPL-3.0](LICENSE): if you run a modified Evidara as a
+hosted service, you must make your modifications available under the same
+license.
+
 ## Architecture
 
 The MVP is a TypeScript monorepo deployed as a modular monolith plus isolated
